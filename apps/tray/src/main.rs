@@ -175,8 +175,19 @@ fn new_discord() -> Discord {
 
 fn main() {
     if !single_instance() {
+        // Already running in the tray: launching the app again opens the setup window on its own.
+        #[cfg(windows)]
+        {
+            cad::setup_window::init_dpi();
+            let dark = cad::theme::taskbar_dark();
+            cad::theme::apply(dark);
+            cad::setup_window::open(dark, false);
+            run_loop(Duration::from_millis(150), cad::setup_window::is_open);
+        }
         return;
     }
+    #[cfg(windows)]
+    cad::setup_window::init_dpi();
     log::write(&format!("{APP_NAME} {} starting", env!("CARGO_PKG_VERSION")));
     let core = Arc::new(Mutex::new(Core::new(Options::system(), Box::new(new_discord()), now_ms())));
     let handler_core = core.clone();
@@ -202,6 +213,7 @@ fn main() {
     let project = CheckMenuItem::with_id("project", "Show project name", true, false, None);
     let pin = Submenu::new("Pin session", true);
     let startup = CheckMenuItem::with_id("startup", "Start with Windows", true, autostart::enabled(), None);
+    let setup = MenuItem::with_id("setup", "Connect your tools…", true, None);
     let open_settings = MenuItem::with_id("settings", "Open settings file", true, None);
     let open_log = MenuItem::with_id("log", "Open log", true, None);
     let reconnect = MenuItem::with_id("reconnect", "Reconnect to Discord", true, None);
@@ -216,7 +228,7 @@ fn main() {
         let _ = menu.append(item);
     }
     let _ = menu.append(&PredefinedMenuItem::separator());
-    let items: [&dyn IsMenuItem; 4] = [&open_settings, &open_log, &reconnect, &quit];
+    let items: [&dyn IsMenuItem; 5] = [&setup, &open_settings, &open_log, &reconnect, &quit];
     for item in items {
         let _ = menu.append(item);
     }
@@ -224,6 +236,11 @@ fn main() {
     let mut dark = cad::theme::taskbar_dark();
     cad::theme::apply(dark);
     let tray = TrayIconBuilder::new().with_menu(Box::new(menu.clone())).with_tooltip(format!("{APP_NAME} — starting")).with_icon(icon(true)).build().expect("create tray icon");
+    // First run: offer to connect the tools that were found.
+    #[cfg(windows)]
+    if !cad::setup::marker_path().exists() {
+        cad::setup_window::open(dark, true);
+    }
     let mut ui = Ui { tray, menu, error_shown: false, discord, showing, error, share, pause, project, startup, pin, shown: None };
 
     let mut last_refresh = Instant::now() - Duration::from_secs(5);
@@ -239,6 +256,11 @@ fn main() {
                 "project" => { let on = !c.settings.show_project; c.save_toggles(&json!({"showProject": on})) }
                 "pause" => { c.paused = !c.paused; Ok(()) }
                 "startup" => autostart::set(!autostart::enabled()),
+                "setup" => {
+                    #[cfg(windows)]
+                    cad::setup_window::open(dark, false);
+                    Ok(())
+                }
                 "settings" => {
                     let path = cad::settings::settings_path();
                     if !path.exists() {
@@ -324,6 +346,9 @@ fn run_loop(interval: Duration, mut tick: impl FnMut() -> bool) {
         let timer = SetTimer(None, 0, interval.as_millis() as u32, None);
         let mut msg = MSG::default();
         while GetMessageW(&mut msg, None, 0, 0).as_bool() {
+            if cad::setup_window::pre_translate(&msg) {
+                continue;
+            }
             let _ = TranslateMessage(&msg);
             DispatchMessageW(&msg);
             if msg.message == WM_TIMER && !tick() {

@@ -2,6 +2,16 @@
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- **Connect your tools window:** finds VS Code, VS Code Insiders, Claude Code and Codex, shows
+  whether each is connected, and connects or disconnects them with one click. No terminal needed.
+  - Opens on first run, from the tray menu, or when you launch the app a second time.
+  - Shows whether Codex hooks are approved, and updates when you switch back from Codex.
+  - Detects a moved app folder and relinks the plugins.
+  - Uses each tool's own installer and adds only the Ctrl Alt Delegate plugin.
+- **Windows look:** the app now uses modern Windows controls and is sharp on scaled displays.
+
 ## 0.1.0 (2026-11-19)
 
 First release, for Windows 11 (x64).

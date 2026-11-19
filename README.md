@@ -54,8 +54,21 @@ as their program exits, and timers survive restarts of the app.
    - Windows may warn about an unknown publisher, because the files aren't code-signed yet. Choose
      **More info → Run anyway**.
    - If you move the folder later, turn **Start with Windows** off and on again.
-5. Install the plugins and the VS Code extension with the commands below. Use the unzipped folder
-   wherever they say `<path to this folder>`, and install the `.vsix` from that folder too.
+5. The **Connect your tools** window opens. It finds VS Code, VS Code Insiders, Claude Code and
+   Codex on your PC and shows whether each one is connected. Tick the ones you want and click
+   **Apply**. Untick one later to disconnect it.
+   - To open it again, use **Connect your tools…** in the tray menu, or run `ctrl-alt-delegate.exe`
+     a second time.
+   - **Codex** won't run plugin hooks until you approve them: restart Codex, open **Settings → Hooks**
+     and approve Ctrl Alt Delegate. The window says "Hooks approved" once that's done.
+   - Restart open Claude Code sessions, and reload open VS Code windows, after connecting them.
+   - If you move the folder later, open the window and click **Apply** to relink the plugins.
+
+<img src="docs/screenshots/setup-window.png" alt="Connect your tools window with VS Code, VS Code Insiders, Claude Code, Codex and Start with Windows" width="520">
+
+The window runs each tool's own installer (`code --install-extension`, `claude plugin`,
+`codex plugin`). It adds only the Ctrl Alt Delegate plugin and doesn't change any other settings or hooks.
+To do the same by hand, use the commands under **Manual setup** below.
 
 ## Build and run (from source)
 
@@ -71,14 +84,20 @@ the log or settings, reconnect, or quit.
 
 <img src="docs/screenshots/tray-menu.png" alt="Ctrl Alt Delegate tray menu in dark mode" width="620">
 
+Run `scripts/build.ps1 -Extension` first. It builds the app, copies `cad.exe` into both agent
+plugins, and packages the VS Code extension. Then use **Connect your tools…** in the tray menu, or
+the manual commands below.
+
+## Manual setup
+
+Use the unzipped release folder (or the repository root) wherever the commands say
+`<path to this folder>`.
+
 **VS Code** (use `code-insiders` for Insiders):
 
 ```bash
-cd apps/vscode && npm install && npm run package
-code --install-extension ctrl-alt-delegate-vscode.vsix
+code --install-extension "<path to this folder>\ctrl-alt-delegate-vscode.vsix"
 ```
-
-Run `scripts/build.ps1` first. It builds the app and copies `cad.exe` into both agent plugins.
 
 **Claude Code:**
 
@@ -99,7 +118,8 @@ $codex = (Get-Process codex | Select-Object -First 1).Path
 Restart Codex. Then approve the plugin's hooks under **Settings → Hooks**: Codex doesn't run plugin hooks until you trust them.
 
 Neither install changes your existing hooks. To remove the plugins, run
-`claude plugin uninstall ctrl-alt-delegate@ctrl-alt-delegate` or `codex plugin remove ctrl-alt-delegate`.
+`claude plugin uninstall ctrl-alt-delegate@ctrl-alt-delegate` or
+`codex plugin remove ctrl-alt-delegate@ctrl-alt-delegate` (or untick them in **Connect your tools**).
 
 ## Command line
 

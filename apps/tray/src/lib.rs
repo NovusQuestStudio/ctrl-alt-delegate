@@ -12,6 +12,9 @@ pub mod process;
 pub mod protocol;
 pub mod selector;
 pub mod settings;
+pub mod setup;
+#[cfg(windows)]
+pub mod setup_window;
 pub mod sha256;
 pub mod store;
 pub mod theme;

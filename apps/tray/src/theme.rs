@@ -34,6 +34,20 @@ mod imp {
         dword(w!("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"), w!("SystemUsesLightTheme")) == Some(0)
     }
 
+    /// Lets one window or control use the dark theme (uxtheme AllowDarkModeForWindow).
+    pub fn allow_dark(hwnd: isize) {
+        if build() < 18362 {
+            return;
+        }
+        unsafe {
+            let Ok(uxtheme) = LoadLibraryW(w!("uxtheme.dll")) else { return };
+            if let Some(allow) = GetProcAddress(uxtheme, PCSTR(133 as *const u8)) {
+                let allow: unsafe extern "system" fn(isize, i32) -> i32 = std::mem::transmute(allow);
+                allow(hwnd, 1);
+            }
+        }
+    }
+
     /// Apply dark (true) or light (false) pop-up menus for this process.
     pub fn apply(dark: bool) {
         if build() < 18362 {
@@ -61,6 +75,7 @@ mod imp {
         false
     }
     pub fn apply(_: bool) {}
+    pub fn allow_dark(_: isize) {}
 }
 
-pub use imp::{apply, taskbar_dark};
+pub use imp::{allow_dark, apply, taskbar_dark};

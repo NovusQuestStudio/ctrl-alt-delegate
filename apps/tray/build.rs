@@ -17,6 +17,7 @@ fn find_rc() -> Option<PathBuf> {
 fn main() {
     println!("cargo:rerun-if-changed=assets/app.rc");
     println!("cargo:rerun-if-changed=assets/app.ico");
+    println!("cargo:rerun-if-changed=assets/app.manifest");
     println!("cargo:rerun-if-env-changed=RC");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") || std::env::var("CARGO_CFG_TARGET_ENV").as_deref() != Ok("msvc") {
         return;
