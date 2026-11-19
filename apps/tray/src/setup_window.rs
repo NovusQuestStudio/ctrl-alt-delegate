@@ -46,6 +46,8 @@ struct Paint {
     background: HBRUSH,
     text: COLORREF,
     muted: COLORREF,
+    /// Highlights rows that Apply will change.
+    accent: COLORREF,
     dark: bool,
     font: HFONT,
     bold: HFONT,
@@ -62,6 +64,10 @@ thread_local! {
     static AVAILABLE: Cell<[bool; ROWS]> = const { Cell::new([false; ROWS]) };
     /// True while the commands view replaces the tool rows.
     static SHOWING: Cell<bool> = const { Cell::new(false) };
+    /// Each row's normal description, shown whenever Apply wouldn't change that row.
+    static DETAILS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    /// Rows Apply will change (drawn bold, in the accent colour).
+    static PENDING: Cell<[bool; ROWS]> = const { Cell::new([false; ROWS]) };
 }
 
 fn rgb(r: u8, g: u8, b: u8) -> COLORREF {
@@ -165,11 +171,17 @@ unsafe fn create(dark: bool) {
     let face: Vec<u16> = "Consolas".encode_utf16().collect();
     mono.lfFaceName = [0; 32];
     mono.lfFaceName[..face.len()].copy_from_slice(&face);
-    let (bg, text, muted) = if dark { (rgb(32, 32, 32), rgb(240, 240, 240), rgb(170, 170, 170)) } else { (rgb(249, 249, 249), rgb(26, 26, 26), rgb(96, 96, 96)) };
+    // The accent matches the blue of Windows 11's ticked checkboxes.
+    let (bg, text, muted, accent) = if dark {
+        (rgb(32, 32, 32), rgb(240, 240, 240), rgb(170, 170, 170), rgb(96, 205, 255))
+    } else {
+        (rgb(249, 249, 249), rgb(26, 26, 26), rgb(96, 96, 96), rgb(0, 95, 184))
+    };
     PAINT.set(Some(Paint {
         background: CreateSolidBrush(bg),
         text,
         muted,
+        accent,
         dark,
         font: CreateFontIndirectW(&base),
         bold: CreateFontIndirectW(&bold),
@@ -226,7 +238,7 @@ unsafe fn create(dark: bool) {
     control(hwnd, w!("STATIC"), "", 0, ID_RESULT, (24, 512, 752, 40), p.font);
     control(hwnd, w!("BUTTON"), "Refresh", WS_TABSTOP.0, ID_REFRESH, (24, 560, 104, 32), p.font);
     control(hwnd, w!("BUTTON"), "Show commands", WS_TABSTOP.0, ID_SHOW, (136, 560, 150, 32), p.font);
-    control(hwnd, w!("BUTTON"), "Apply", WS_TABSTOP.0 | 1 /* BS_DEFPUSHBUTTON */, ID_APPLY, (560, 560, 112, 32), p.font);
+    control(hwnd, w!("BUTTON"), "Apply", WS_TABSTOP.0 | 1 /* BS_DEFPUSHBUTTON */, ID_APPLY, (520, 560, 152, 32), p.font);
     control(hwnd, w!("BUTTON"), "Close", WS_TABSTOP.0, ID_CLOSE, (680, 560, 96, 32), p.font);
 }
 
@@ -277,9 +289,10 @@ fn refresh(first_run: bool) {
     });
     let Some((rows, busy, initial)) = rows else { return };
     let mut available = [false; ROWS];
+    let mut details = Vec::with_capacity(ROWS);
     for (i, (detail, can, tick)) in rows.into_iter().enumerate() {
         available[i] = can;
-        set_text(ID_DETAIL + i as i32, &detail);
+        details.push(detail);
         if let Some(on) = tick {
             set_checked(ID_CHECK + i as i32, on);
         }
@@ -287,7 +300,9 @@ fn refresh(first_run: bool) {
     }
     let startup = Tool::ALL.len();
     available[startup] = true;
-    set_text(ID_DETAIL + startup as i32, "Opens Ctrl Alt Delegate in the tray when you sign in to Windows.");
+    details.push("Opens Ctrl Alt Delegate in the tray when you sign in to Windows.".into());
+    // update_apply below shows these, or a "Will …" line for rows Apply would change.
+    DETAILS.set(details);
     if initial {
         // On first run it starts ticked, like the tools that were found.
         set_checked(ID_CHECK + startup as i32, autostart::enabled() || first_run);
@@ -338,7 +353,40 @@ fn update_apply() {
         let text = format!("Apply will {}.", plan.join(", "));
         set_text(ID_RESULT, &text);
     }
-    set_text(ID_APPLY, &if count == 0 { "Apply".to_string() } else { format!("Apply ({count})") });
+    // Rows Apply will change say so, in bold accent text; the rest show their normal description.
+    let mut lines: Vec<Option<String>> = vec![None; ROWS];
+    for (tool, change, _) in &jobs {
+        if let Some(row) = Tool::ALL.iter().position(|t| t == tool) {
+            lines[row] = Some(match change {
+                Change::Install => "Will connect when you click Apply.".into(),
+                Change::Relink => "Will relink to this folder when you click Apply.".into(),
+                Change::Remove => "Will disconnect when you click Apply.".into(),
+            });
+        }
+    }
+    if let Some(on) = startup {
+        lines[Tool::ALL.len()] = Some(format!("Will turn {} when you click Apply.", if on { "on" } else { "off" }));
+    }
+    let details = DETAILS.with_borrow(Clone::clone);
+    let mut pending = [false; ROWS];
+    let fonts = PAINT.get().map(|p| (p.font, p.bold));
+    for (row, line) in lines.iter().enumerate() {
+        pending[row] = line.is_some();
+        let normal = details.get(row).map_or("", String::as_str);
+        set_text(ID_DETAIL + row as i32, line.as_deref().unwrap_or(normal));
+        if let Some((font, bold)) = fonts {
+            let font = if pending[row] { bold } else { font };
+            unsafe {
+                SendMessageW(item(ID_DETAIL + row as i32), WM_SETFONT, Some(WPARAM(font.0 as usize)), Some(LPARAM(1)));
+            }
+        }
+    }
+    PENDING.set(pending);
+    set_text(ID_APPLY, &match count {
+        0 => "Apply".to_string(),
+        1 => "Apply 1 change".to_string(),
+        n => format!("Apply {n} changes"),
+    });
     enable(ID_APPLY, count > 0 && !busy);
     enable(ID_REFRESH, !busy);
 }
@@ -507,8 +555,9 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             let hdc = HDC(wparam.0 as *mut _);
             let id = GetDlgCtrlID(HWND(lparam.0 as *mut _));
             let row = (id % 100) as usize;
+            let pending = id / 100 == 3 && row < ROWS && PENDING.get()[row];
             let muted = id == ID_INTRO || (id / 100 == 3) || (id / 100 == 2 && row < ROWS && !AVAILABLE.get()[row]);
-            SetTextColor(hdc, if muted { p.muted } else { p.text });
+            SetTextColor(hdc, if pending { p.accent } else if muted { p.muted } else { p.text });
             SetBkMode(hdc, TRANSPARENT);
             LRESULT(p.background.0 as isize)
         }
@@ -526,6 +575,8 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
         WM_DESTROY => {
             WINDOW.set(None);
             SHOWING.set(false);
+            PENDING.set([false; ROWS]);
+            DETAILS.set(Vec::new());
             MODEL.set(None);
             if let Some(p) = PAINT.take() {
                 let _ = DeleteObject(p.background.into());

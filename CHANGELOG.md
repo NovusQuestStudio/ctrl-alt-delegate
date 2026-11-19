@@ -27,6 +27,8 @@ First release, for Windows 11 (x64).
   - Detects a moved app folder and relinks the plugins.
   - Uses each tool's own installer and adds only the Ctrl Alt Delegate plugin. For Devin, which has
     no installer, `cad devin connect` adds only our entries to its config.json and backs it up first.
+  - Rows that Apply will change say what will happen, in bold, and the button counts the changes
+    ("Apply 2 changes").
   - **Show commands** lists exactly what Apply will run, with a **Copy** button. Each command is
     also written to the log as it runs.
 - **How the card is chosen:**
