@@ -36,7 +36,7 @@ First release, for Windows 11 (x64).
   - Changes you didn't trigger wait 5 seconds before switching, so the card doesn't flicker.
 - **Sessions:** cleared as soon as their program exits. Timers survive app restarts.
 - **Tray menu:** follows Windows dark or light mode. It shows status, share or stop sharing, pause,
-  show project name, pin a session, connect your tools, start with Windows, open the settings file or
+  show project name, pin a session, connect or disconnect tools, start with Windows, open the settings file or
   log, reconnect to Discord, and quit.
 - **Privacy:** no telemetry and no network use beyond the local Discord app. Prompts, code and file
   names are never read. The project name is hidden by default.

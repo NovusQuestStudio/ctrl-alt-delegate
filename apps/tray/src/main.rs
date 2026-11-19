@@ -213,7 +213,7 @@ fn main() {
     let project = CheckMenuItem::with_id("project", "Show project name", true, false, None);
     let pin = Submenu::new("Pin session", true);
     let startup = CheckMenuItem::with_id("startup", "Start with Windows", true, autostart::enabled(), None);
-    let setup = MenuItem::with_id("setup", "Connect your tools…", true, None);
+    let setup = MenuItem::with_id("setup", "Connect/Disconnect Tools", true, None);
     let open_settings = MenuItem::with_id("settings", "Open settings file", true, None);
     let open_log = MenuItem::with_id("log", "Open log", true, None);
     let reconnect = MenuItem::with_id("reconnect", "Reconnect to Discord", true, None);

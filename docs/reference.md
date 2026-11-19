@@ -3,7 +3,7 @@
 ## Tray menu
 
 Right-click the tray icon to see what's being shown, turn sharing on or off, pause, show the project
-name, pin a session, connect your tools, start with Windows, open the settings file or log, reconnect
+name, pin a session, connect or disconnect tools, start with Windows, open the settings file or log, reconnect
 to Discord, or quit. The menu follows Windows dark and light mode.
 
 <img src="screenshots/tray-menu.png" alt="Ctrl Alt Delegate tray menu in dark mode" width="620">
@@ -57,7 +57,7 @@ Requires the Rust toolchain, and Node.js only for the VS Code extension.
 ```
 
 This builds the app, copies `cad.exe` into each agent plugin, and packages the extension. Then start
-`apps\tray\target\release\ctrl-alt-delegate.exe` and use **Connect your tools…** in the tray menu.
+`apps\tray\target\release\ctrl-alt-delegate.exe` and use **Connect/Disconnect Tools** in the tray menu.
 `.\scripts\package.ps1` makes the release zip and its checksum file.
 
 Run the tests with `cargo test` in `apps\tray` and `npm test` in `apps\vscode`.

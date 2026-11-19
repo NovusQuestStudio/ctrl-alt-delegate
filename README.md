@@ -68,7 +68,7 @@ Windows 11 first; macOS is planned. Devin's cloud sessions are under investigati
 <img src="docs/screenshots/setup-window.png" alt="Connect your tools window listing VS Code, VS Code Insiders, Claude Code, Codex, Devin agent, Devin Desktop editor, Antigravity agent, Antigravity editor and Start with Windows" width="640">
 </div>
 
-Reopen the window any time from **Connect your tools…** in the tray menu. Untick a tool to disconnect
+Reopen the window any time from **Connect/Disconnect Tools** in the tray menu. Untick a tool to disconnect
 it. **Show commands** lists exactly what **Apply** will run, so you can check it, or copy the commands
 and run them yourself. Prefer the terminal? See [Manual setup](docs/manual-setup.md).
 
