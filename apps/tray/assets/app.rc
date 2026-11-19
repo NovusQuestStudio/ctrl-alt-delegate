@@ -12,11 +12,12 @@ BEGIN
   BEGIN
     BLOCK "040904B0"
     BEGIN
+      VALUE "CompanyName", "NovusQuest Studio"
       VALUE "ProductName", "Ctrl Alt Delegate"
       VALUE "FileDescription", "Ctrl Alt Delegate - Discord presence for most of your coding tools"
       VALUE "ProductVersion", "0.1.0"
       VALUE "FileVersion", "0.1.0"
-      VALUE "LegalCopyright", "MIT License"
+      VALUE "LegalCopyright", "Copyright (c) 2026 NovusQuest Studio. MIT License."
       VALUE "Comments", "One Developer. Multiple Agents. One Workflow."
     END
   END

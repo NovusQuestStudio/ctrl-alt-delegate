@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 First release, for Windows 11 (x64).
 
 - Discord presence for most of your coding tools, shown as the **Ctrl Alt Delegate** application.
+  Published by NovusQuest Studio.
 - **Supported tools:**
   - **VS Code** (Stable and Insiders), through the extension. The card names the edition.
   - **Claude Code** (CLI and desktop app) and **Codex** (desktop app), through plugin hooks. The Codex

@@ -3,6 +3,7 @@ name = "ctrl-alt-delegate"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+authors = ["NovusQuest Studio"]
 description = "Discord presence for most of your coding tools"
 publish = false
 

@@ -46,7 +46,7 @@ token, so there is no password or key to store.
    **Application (client) ID** and **Directory (tenant) ID**.
 2. **Trust GitHub releases.** In the app → **Certificates & secrets** → **Federated credentials** →
    **Add credential** → **GitHub Actions deploying Azure resources**:
-   - Organization: `TEEllis22`, Repository: `ctrl-alt-delegate`
+   - Organization: `NovusQuestStudio`, Repository: `ctrl-alt-delegate`
    - Entity type: **Environment**, name: `release`
 3. **Allow it to sign.** Back on the signing account → **Access control (IAM)** → **Add role
    assignment** → **Artifact Signing Certificate Profile Signer** → select the app

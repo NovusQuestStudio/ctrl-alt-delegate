@@ -4,8 +4,8 @@
 # -Url before winget can install it.
 param(
   [string]$Url,
-  [string]$Identifier = 'TEEllis22.CtrlAltDelegate',
-  [string]$Repository = 'https://github.com/TEEllis22/ctrl-alt-delegate'
+  [string]$Identifier = 'NovusQuestStudio.CtrlAltDelegate',
+  [string]$Repository = 'https://github.com/NovusQuestStudio/ctrl-alt-delegate'
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -59,8 +59,8 @@ ManifestVersion: $schema
 PackageIdentifier: $Identifier
 PackageVersion: $version
 PackageLocale: en-US
-Publisher: TEEllis22
-PublisherUrl: https://github.com/TEEllis22
+Publisher: NovusQuest Studio
+PublisherUrl: https://github.com/NovusQuestStudio
 PublisherSupportUrl: $Repository/issues
 PackageName: Ctrl Alt Delegate
 PackageUrl: $Repository

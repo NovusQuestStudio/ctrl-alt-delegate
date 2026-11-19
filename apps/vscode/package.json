@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "publisher": "ctrl-alt-delegate",
   "license": "MIT",
+  "author": "NovusQuest Studio",
   "private": true,
   "repository": {
     "type": "git",

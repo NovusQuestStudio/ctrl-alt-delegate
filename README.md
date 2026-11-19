@@ -6,10 +6,12 @@
 
 **One Developer. Multiple Agents. One Workflow.**
 
+A [NovusQuest Studio](https://github.com/NovusQuestStudio) project
+
 Discord presence for most of your coding tools. Your editors and AI agents share one Discord card
 that always shows what matters right now.
 
-[![CI](https://github.com/TEEllis22/ctrl-alt-delegate/actions/workflows/ci.yml/badge.svg)](https://github.com/TEEllis22/ctrl-alt-delegate/actions/workflows/ci.yml)
+[![CI](https://github.com/NovusQuestStudio/ctrl-alt-delegate/actions/workflows/ci.yml/badge.svg)](https://github.com/NovusQuestStudio/ctrl-alt-delegate/actions/workflows/ci.yml)
 ![Windows 11](https://img.shields.io/badge/Windows-11-0078D4)
 ![No telemetry](https://img.shields.io/badge/telemetry-none-2ea44f)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -129,11 +131,14 @@ Not yet. Windows 11 comes first, and macOS is planned.
 
 ## License
 
-MIT. Originally based on [agent-discord-presence](https://github.com/LitoMore/agent-discord-presence)
-by LitoMore; see [NOTICE.md](NOTICE.md).
+MIT © 2026 NovusQuest Studio. Originally based on
+[agent-discord-presence](https://github.com/LitoMore/agent-discord-presence) by LitoMore; see
+[NOTICE.md](NOTICE.md).
 
 <div align="center">
 
 *Because sometimes the smartest move is knowing when to delegate.*
+
+Made by [NovusQuest Studio](https://github.com/NovusQuestStudio)
 
 </div>

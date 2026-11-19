@@ -5,7 +5,7 @@ Windows. Once a version is in Microsoft's public
 [winget-pkgs](https://github.com/microsoft/winget-pkgs) repository, anyone can install it with:
 
 ```powershell
-winget install TEEllis22.CtrlAltDelegate
+winget install NovusQuestStudio.CtrlAltDelegate
 ```
 
 Listing is free. Files that winget installs aren't marked as downloaded from the internet, so Windows
@@ -14,7 +14,7 @@ usually doesn't show the "unknown publisher" prompt that a downloaded zip gets.
 ## How the package is set up
 
 - **Type:** a zip containing a portable app. winget unpacks the whole release folder into
-  `%LOCALAPPDATA%\Microsoft\WinGet\Packages\TEEllis22.CtrlAltDelegate_…\CtrlAltDelegate\` and adds
+  `%LOCALAPPDATA%\Microsoft\WinGet\Packages\NovusQuestStudio.CtrlAltDelegate_…\CtrlAltDelegate\` and adds
   the `ctrl-alt-delegate` and `cad` commands.
 - **Real folder on PATH:** `ArchiveBinariesDependOnPath: true` puts that folder on PATH instead of
   creating links, because the app finds its plugins next to its own `.exe`.
@@ -58,10 +58,10 @@ in.
    ```
 
    This opens a pull request to `microsoft/winget-pkgs` with the files under
-   `manifests/t/TEEllis22/CtrlAltDelegate/<version>/`. You can also fork winget-pkgs and open the pull
+   `manifests/n/NovusQuestStudio/CtrlAltDelegate/<version>/`. You can also fork winget-pkgs and open the pull
    request yourself.
 
 6. **Review.** A bot asks you to accept Microsoft's contributor agreement on your first pull request.
    Automated checks then install the package and scan it; a new unsigned app can be held for manual
-   review. Approval usually takes a few days. After that, `winget install TEEllis22.CtrlAltDelegate`
+   review. Approval usually takes a few days. After that, `winget install NovusQuestStudio.CtrlAltDelegate`
    works for everyone, and `winget upgrade` picks up later versions once you submit them the same way.
