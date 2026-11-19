@@ -1,0 +1,49 @@
+export const agents = ['claude-code', 'codex', 'vscode'] as const;
+export type Agent = typeof agents[number];
+export type State = 'idle' | 'working' | 'waiting' | 'error' | 'closed';
+export interface PresenceEvent {
+  version: 1;
+  agent: Agent;
+  sessionId: string;
+  state: State;
+  /** Time of the last state event; heartbeats retain this value. */
+  updatedAt: number;
+  /** Only long-lived reporters running in the tool's own process should supply this. */
+  pid?: number;
+  heartbeat?: boolean;
+  /** A tool or permission event continues the current task rather than starting a new one. */
+  continuation?: boolean;
+  /**
+   * Folder name only (never a path). Kept locally; shown in Discord only when the
+   * user enables `showProject`.
+   */
+  project?: string;
+}
+export const labels: Record<Agent, string> = {'claude-code': 'Claude Code', codex: 'Codex', vscode: 'VS Code'};
+const states: readonly State[] = ['idle', 'working', 'waiting', 'error', 'closed'];
+/** Reduce a path to a safe display name: last segment, no control characters, bounded. */
+export function projectName(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value) return;
+  const name = value.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? '';
+  const clean = Array.from(name.replace(/[\u0000-\u001f\u007f]/g, '')).slice(0, 64).join('').trim();
+  return clean && !/^[A-Za-z]:$/.test(clean) ? clean : undefined;
+}
+export function parseEvent(value: unknown, now = Date.now()): PresenceEvent {
+  if (!value || typeof value !== 'object') throw new Error('Expected event object');
+  const e = value as Record<string, unknown>;
+  if (e.version !== 1 || !agents.includes(e.agent as Agent)) throw new Error('Unsupported protocol or agent');
+  if (typeof e.sessionId !== 'string' || !e.sessionId.length || e.sessionId.length > 256) throw new Error('Invalid sessionId');
+  if (!states.includes(e.state as State)) throw new Error('Invalid state');
+  if (typeof e.updatedAt !== 'number' || !Number.isSafeInteger(e.updatedAt) || e.updatedAt < 0 || e.updatedAt > now + 60_000) throw new Error('Invalid updatedAt');
+  if (e.pid !== undefined && (!Number.isSafeInteger(e.pid) || (e.pid as number) <= 0)) throw new Error('Invalid pid');
+  if (e.heartbeat !== undefined && typeof e.heartbeat !== 'boolean') throw new Error('Invalid heartbeat');
+  if (e.continuation !== undefined && typeof e.continuation !== 'boolean') throw new Error('Invalid continuation');
+  if (e.project !== undefined && (typeof e.project !== 'string' || projectName(e.project) !== e.project)) throw new Error('Invalid project');
+  // Whitelist fields: never retain prompts, paths, file names, or tool arguments.
+  return {version: 1, agent: e.agent as Agent, sessionId: e.sessionId, state: e.state as State, updatedAt: e.updatedAt,
+    pid: e.pid as number | undefined, heartbeat: e.heartbeat as boolean | undefined,
+    continuation: e.continuation as boolean | undefined, project: e.project as string | undefined};
+}
+export function sessionKey(e: Pick<PresenceEvent, 'agent' | 'sessionId'>): string {
+  return `${e.agent}:${e.sessionId}`;
+}

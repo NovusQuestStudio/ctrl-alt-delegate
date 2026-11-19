@@ -1,0 +1,6 @@
+{
+  "name": "ctrl-alt-delegate",
+  "version": "0.1.0",
+  "description": "Reports Claude Code session state (never prompts or code) to the local Ctrl Alt Delegate Discord presence service.",
+  "license": "MIT"
+}
