@@ -12,7 +12,7 @@
 
 ## To do, in order
 1. Review the diff, then commit Phase A.
-2. Retire the Node service. Remove `src/daemon.ts`, `cli.ts`, `store.ts`, `selector.ts`, `discord.ts`, `process-table.ts`, `persist.ts`, `presentation.ts`, `settings.ts`, `background.ts` and `adapters/`, plus their tests and the root build scripts.
+2. ✅ Done: retired the Node service and rewrote the README. Remove `src/daemon.ts`, `cli.ts`, `store.ts`, `selector.ts`, `discord.ts`, `process-table.ts`, `persist.ts`, `presentation.ts`, `settings.ts`, `background.ts` and `adapters/`, plus their tests and the root build scripts.
    - Keep `src/client.ts` and `src/protocol.ts`, which the VS Code extension uses. Add `windsurf`/`devin` to `editionFromAppName` in `src/protocol.ts`, since the Rust side already has them.
    - Delete the stale `apps/tray/target/release/ctrl-alt-delegate-tray.exe`.
 3. **Phase B:** an installable Claude plugin (local marketplace `.claude-plugin/marketplace.json`), and a Codex CLI plugin. Codex CLI isn't installed here, and whether hooks fire on Windows needs a live check.

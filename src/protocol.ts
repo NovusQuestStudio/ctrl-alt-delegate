@@ -29,9 +29,10 @@ export interface PresenceEvent {
   edition?: Edition;
 }
 export const labels: Record<Agent, string> = {'claude-code': 'Claude Code', codex: 'Codex', vscode: 'VS Code'};
-export const editions = ['insiders', 'vscodium', 'cursor'] as const;
+// Keep in sync with `Edition` in apps/tray/src/protocol.rs.
+export const editions = ['insiders', 'vscodium', 'cursor', 'windsurf', 'devin'] as const;
 export type Edition = typeof editions[number];
-const editionLabels: Record<Edition, string> = {insiders: 'VS Code Insiders', vscodium: 'VSCodium', cursor: 'Cursor'};
+const editionLabels: Record<Edition, string> = {insiders: 'VS Code Insiders', vscodium: 'VSCodium', cursor: 'Cursor', windsurf: 'Windsurf', devin: 'Devin Desktop'};
 /** Display name for a session's tool, including the editor edition. */
 export function toolLabel(e: Pick<PresenceEvent, 'agent' | 'edition'>): string {
   return e.agent === 'vscode' && e.edition ? editionLabels[e.edition] : labels[e.agent];
@@ -41,6 +42,8 @@ export function editionFromAppName(appName: string): Edition | undefined {
   if (/insiders/i.test(appName)) return 'insiders';
   if (/vscodium/i.test(appName)) return 'vscodium';
   if (/cursor/i.test(appName)) return 'cursor';
+  if (/windsurf/i.test(appName)) return 'windsurf';
+  if (/devin/i.test(appName)) return 'devin';
   return undefined;
 }
 const states: readonly State[] = ['idle', 'working', 'waiting', 'error', 'closed'];
