@@ -1,182 +1,137 @@
+<div align="center">
+
+<img src="docs/images/logo-256.png" alt="Ctrl Alt Delegate logo: a terminal prompt connected to code, chat, AI and layered-stack icons" width="140">
+
 # Ctrl Alt Delegate
 
 **One Developer. Multiple Agents. One Workflow.**
 
-Discord presence for most of your coding tools. A small Windows tray app
-keeps the only connection to Discord. Your editor and agents report what state they're in (working,
-waiting, idle), and the app shows the one that matters most right now.
+Discord presence for most of your coding tools. Your editors and AI agents share one Discord card
+that always shows what matters right now.
 
-<p>
-  <img src="docs/screenshots/card-claude-code.png" alt="Discord card: Ctrl Alt Delegate, Claude Code · Working, Delegating to an AI agent" width="380">
-  <img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor" width="380">
-</p>
+[![CI](https://github.com/TEEllis22/ctrl-alt-delegate/actions/workflows/ci.yml/badge.svg)](https://github.com/TEEllis22/ctrl-alt-delegate/actions/workflows/ci.yml)
+![Windows 11](https://img.shields.io/badge/Windows-11-0078D4)
+![No telemetry](https://img.shields.io/badge/telemetry-none-2ea44f)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+[**Download**](../../releases/latest) · [Quick start](#quick-start) · [Privacy](#privacy) · [FAQ](#faq)
+
+<img src="docs/screenshots/card-claude-code.png" alt="Discord card: Ctrl Alt Delegate, Claude Code · Working, Delegating to an AI agent" width="380">
+<img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor" width="380">
+
+</div>
+
+## What it does
+
+You might have VS Code open, Claude Code working in a terminal and Codex waiting on a question, all
+at once. Each tool on its own would fight over your Discord status. Ctrl Alt Delegate keeps the only
+connection to Discord and picks the one that matters:
+
+- **The card follows you.** The window you're looking at comes first, then whatever is working,
+  then whatever you prompted last. A pin overrides all of it.
+- **It shows the state, not the work.** "Working", "Waiting for input", "Ready for a prompt",
+  "Editing". Never your prompts, code or file names.
+- **It's set up in one click.** A setup window finds your tools and connects them. No config files,
+  no terminal.
+- **It stays out of the way.** A small tray app (about 14 MB of memory) that starts with Windows if
+  you want it to.
 
 ## Supported tools
 
-| Tool | Status |
-|---|---|
-| VS Code (Stable) | ✅ Supported (extension) |
-| VS Code Insiders | ✅ Supported (extension) |
-| Claude Code (CLI and desktop app) | ✅ Supported (plugin hooks) |
-| Codex Desktop | ✅ Supported (plugin hooks) |
-| Codex CLI | ✅ Expected to work (same plugin and hook engine; not separately tested) |
-| Devin Desktop agent sidebar | ✅ Supported (hooks in Devin's config) |
-| Devin Desktop editor | ✅ Supported (extension) |
-| Devin CLI | ✅ Expected to work (same hooks and config as the sidebar; not separately tested) |
-| Antigravity agent (IDE and CLI) | ✅ Supported (plugin hooks). Shows Working and Ready; Antigravity has no waiting signal |
-| Antigravity editor | ✅ Supported (extension) |
-| Gemini CLI | ❌ Not planned: Google replaced it with Antigravity CLI for free accounts |
-| Devin (cloud) | 🔬 Under investigation |
+| Tool | Editor | AI agent |
+|---|:---:|:---:|
+| **VS Code** and **VS Code Insiders** | ✅ | |
+| **Claude Code** (CLI and desktop app) | | ✅ |
+| **Codex** (desktop app; CLI expected to work) | | ✅ |
+| **Devin** (Devin Desktop; CLI expected to work) | ✅ | ✅ |
+| **Antigravity** (IDE and CLI) | ✅ | ✅ ¹ |
 
-Windows 11 first. macOS is planned.
+¹ Antigravity has no "waiting for permission" signal, so its card shows **Working** and **Ready**
+only.
+
+Windows 11 first; macOS is planned. Devin's cloud sessions are under investigation.
+
+## Quick start
+
+1. **Download** `CtrlAltDelegate-<version>-windows-x64.zip` from [Releases](../../releases/latest)
+   and unzip it to a folder you'll keep, such as `%LOCALAPPDATA%\Programs\CtrlAltDelegate`.
+2. **Run** `ctrl-alt-delegate.exe`. Windows may say the publisher is unknown, because the app isn't
+   code-signed yet: choose **More info → Run anyway**.
+3. **Tick your tools** in the **Connect your tools** window that opens, and click **Apply**.
+4. **Restart or reload** the tools you connected. For Codex, also approve its hooks under
+   **Settings → Hooks**; the window shows "Hooks approved" when that's done.
+
+<div align="center">
+<img src="docs/screenshots/setup-window.png" alt="Connect your tools window listing VS Code, VS Code Insiders, Claude Code, Codex, Devin agent, Devin Desktop editor, Antigravity agent, Antigravity editor and Start with Windows" width="640">
+</div>
+
+Reopen the window any time from **Connect your tools…** in the tray menu. Untick a tool to disconnect
+it. **Show commands** lists exactly what **Apply** will run, so you can check it, or copy the commands
+and run them yourself. Prefer the terminal? See [Manual setup](docs/manual-setup.md).
+
+To check the download first, compare `Get-FileHash -Algorithm SHA256 <zip>` in PowerShell with
+`SHA256SUMS.txt` from the same release.
+
+## How it works
+
+```mermaid
+flowchart LR
+    E["Editors<br/>VS Code · Devin Desktop · Antigravity"] -- extension --> P
+    A["AI agents<br/>Claude Code · Codex · Devin · Antigravity"] -- "hooks → cad.exe" --> P
+    P(["Local pipe<br/>your Windows account only"]) --> T["Ctrl Alt Delegate<br/>tray app"]
+    T -- "the one card that matters" --> D["Discord desktop app"]
+```
+
+Each editor and agent reports a state change ("working", "waiting", "idle") to the tray app on your
+PC. The tray app picks one session and updates your Discord card. Nothing leaves your computer except
+that card, which goes to the Discord app you already run.
 
 ## Privacy
 
-- No telemetry. The only connection is to the Discord desktop app on your PC; nothing goes to the internet.
-- Prompts, code, tool arguments, transcripts, and file names are never read or sent.
-- The project folder name is hidden unless you turn on **Show project name**.
-- No AI-generated summaries, no paid APIs, no Discord bot token or client secret.
-- Agents talk to the app over a local named pipe that only your Windows account can open.
+- **No telemetry, no accounts, no paid APIs.** The only connection is to the Discord app on your PC.
+- **Prompts, code, tool details, transcripts and file names are never read or sent.** Agents report
+  only their state.
+- **Your project name is hidden** unless you turn on **Show project name**.
+- **Only your Windows account can talk to the app.** It listens on a local named pipe, not a network
+  port.
+- **Your settings stay yours.** Connecting a tool adds Ctrl Alt Delegate's own plugin, and nothing
+  else in that tool's settings or hooks changes.
 
-## How the card is chosen
+## FAQ
 
-Priority goes like this:
+**Windows says "unknown publisher". Is it safe?**
+The app isn't code-signed yet, so Windows can't show a publisher. Each release includes
+`SHA256SUMS.txt` to check your download against, and the source for every release is in this
+repository.
 
-1. A pinned session always wins.
-2. Next, a session running in the window you're looking at.
-3. Then a session that's working beats an idle one.
-4. Then the session you prompted most recently.
+**Which session does the card show?**
+The one in the window you're looking at, then one that's working, then the one you prompted last.
+Pin a session from the tray menu to keep it on the card. Details are in the
+[reference](docs/reference.md#how-the-card-is-chosen).
 
-A background agent finishing its work doesn't take the card from the one you're using. Changes you
-didn't trigger wait 5 seconds before the card switches, so it doesn't flicker. Sessions clear as soon
-as their program exits, and timers survive restarts of the app.
+**Can I hide my activity for a while?**
+Yes: **Pause** in the tray menu, or turn off **Share activity on Discord**.
 
-## Install from a release
+**I already use another Discord presence extension.**
+Turn it off, for example `discord-vscode`, so the two don't take turns overwriting your status.
 
-1. Download `CtrlAltDelegate-<version>-windows-x64.zip` and `SHA256SUMS.txt` from the Releases page.
-2. Check the download in PowerShell: `Get-FileHash -Algorithm SHA256 <zip>` must match `SHA256SUMS.txt`.
-3. Unzip it to a permanent folder, for example `%LOCALAPPDATA%\Programs\CtrlAltDelegate`.
-4. Run `ctrl-alt-delegate.exe`.
-   - Windows may warn about an unknown publisher, because the files aren't code-signed yet. Choose
-     **More info → Run anyway**.
-   - If you move the folder later, turn **Start with Windows** off and on again.
-5. The **Connect your tools** window opens. It finds VS Code, VS Code Insiders, Claude Code,
-   Codex, Devin and Antigravity on your PC and shows whether each one is connected. Tick the ones you want and click
-   **Apply**. Untick one later to disconnect it.
-   - To open it again, use **Connect your tools…** in the tray menu, or run `ctrl-alt-delegate.exe`
-     a second time.
-   - **Codex** won't run plugin hooks until you approve them: restart Codex, open **Settings → Hooks**
-     and approve Ctrl Alt Delegate. The window says "Hooks approved" once that's done.
-   - Restart open Claude Code sessions, and reload open VS Code windows, after connecting them.
-   - **Devin:** start a new chat in the agent sidebar after connecting, and reload Devin Desktop's
-     windows for the editor. Devin doesn't run hooks in a folder opened in Restricted Mode.
-   - **Antigravity:** close it completely before connecting or disconnecting its agent, because it
-     locks its plugin folder while it runs. Then start a new conversation.
-   - If you move the folder later, open the window and click **Apply** to relink the plugins.
+**Does it work on macOS or Linux?**
+Not yet. Windows 11 comes first, and macOS is planned.
 
-<img src="docs/screenshots/setup-window.png" alt="Connect your tools window listing VS Code, VS Code Insiders, Claude Code, Codex, Devin agent, Devin Desktop editor, Antigravity agent, Antigravity editor and Start with Windows" width="640">
+## More
 
-The window runs each tool's own installer (`code --install-extension`, `claude plugin`,
-`codex plugin`). It adds only the Ctrl Alt Delegate plugin and doesn't change any other settings or hooks.
-Devin has no installer for hooks, so `cad.exe devin connect` adds ours to the `"hooks"` section of
-Devin's settings file, `%APPDATA%\devin\config.json`. Everything else in that file is kept, and the
-first change saves the original next to it as `config.json.cad-backup`. Its sections may come back in
-a different order, which doesn't change their meaning.
-Click **Show commands** to see exactly what **Apply** will run, with the real paths on your PC, and
-**Copy** them to run yourself in PowerShell instead. Each command is also written to the log as it
-runs. The general commands are under **Manual setup** below.
-
-## Build and run (from source)
-
-Requires the Rust toolchain (and Node.js only to build the VS Code extension).
-
-```bash
-cargo build --release --manifest-path apps/tray/Cargo.toml
-```
-
-Start `apps/tray/target/release/ctrl-alt-delegate.exe`. A tray icon appears. Right-click it to see
-status, share or stop sharing, pause, show the project name, pin a session, start with Windows, open
-the log or settings, reconnect, or quit.
-
-<img src="docs/screenshots/tray-menu.png" alt="Ctrl Alt Delegate tray menu in dark mode" width="620">
-
-Run `scripts/build.ps1 -Extension` first. It builds the app, copies `cad.exe` into both agent
-plugins, and packages the VS Code extension. Then use **Connect your tools…** in the tray menu, or
-the manual commands below.
-
-## Manual setup
-
-Use the unzipped release folder (or the repository root) wherever the commands say
-`<path to this folder>`.
-
-**VS Code** (use `code-insiders` for Insiders):
-
-```bash
-code --install-extension "<path to this folder>\ctrl-alt-delegate-vscode.vsix"
-```
-
-**Claude Code:**
-
-```bash
-claude plugin marketplace add "<path to this folder>"
-claude plugin install ctrl-alt-delegate@ctrl-alt-delegate
-```
-
-**Codex (desktop app or CLI):** Codex Desktop includes a `codex.exe` command-line tool. In PowerShell,
-with Codex open:
-
-```powershell
-$codex = (Get-Process codex | Select-Object -First 1).Path
-& $codex plugin marketplace add "<path to this folder>"
-& $codex plugin add ctrl-alt-delegate@ctrl-alt-delegate
-```
-
-Restart Codex. Then approve the plugin's hooks under **Settings → Hooks**: Codex doesn't run plugin hooks until you trust them.
-
-**Devin:** for the agent sidebar and the Devin CLI, run this from the unzipped folder, then start a
-new chat in Devin. Use `disconnect` to remove the hooks again.
-
-```powershell
-& "<path to this folder>\cad.exe" devin connect
-```
-
-**Antigravity:** with Antigravity closed, run
-`agy plugin install "<path to this folder>\plugins\antigravity"` (remove it with
-`agy plugin uninstall ctrl-alt-delegate`). For its editor, use
-`antigravity-ide --install-extension "<path to this folder>\ctrl-alt-delegate-vscode.vsix"`.
-
-For Devin Desktop's editor, install the extension with
-`devin-desktop --install-extension "<path to this folder>\ctrl-alt-delegate-vscode.vsix"`.
-
-None of these installs change your existing hooks. To remove the plugins, run
-`claude plugin uninstall ctrl-alt-delegate@ctrl-alt-delegate` or
-`codex plugin remove ctrl-alt-delegate@ctrl-alt-delegate` (or untick them in **Connect your tools**).
-
-## Command line
-
-`cad.exe status | pause | resume | pin AGENT:ID | unpin | start | stop | devin connect | devin disconnect | paths`
-
-## Settings
-
-Settings live in `%APPDATA%\CtrlAltDelegate\config.json`. Open the file from the tray menu; changes
-apply within a second.
-
-```json
-{ "enabled": true, "showProject": false, "largeImage": "ctrl_alt_delegate_icon", "staleMinutes": 30 }
-```
-
-`largeImage` is the Ctrl Alt Delegate icon by default. To hide the image, set it to `""`.
-
-## Troubleshooting
-
-- **Nothing shows in Discord:** make sure the Discord desktop app is running. Check that the tray says
-  "Discord: connected", and turn on **Settings → Activity Privacy → Share your activity** in Discord.
-- **Two presences fight over your status:** turn off other Discord presence extensions and plugins
-  (for example `discord-vscode`).
-- **Logs:** tray → **Open log** (`%LOCALAPPDATA%\CtrlAltDelegate\ctrl-alt-delegate.log`).
+- [Manual setup](docs/manual-setup.md): every command the setup window runs, per tool
+- [Reference](docs/reference.md): tray menu, settings, command line, building from source,
+  troubleshooting
+- [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
 
 ## License
 
-MIT. Originally based on agent-discord-presence by LitoMore; see [NOTICE.md](NOTICE.md).
+MIT. Originally based on [agent-discord-presence](https://github.com/LitoMore/agent-discord-presence)
+by LitoMore; see [NOTICE.md](NOTICE.md).
+
+<div align="center">
 
 *Because sometimes the smartest move is knowing when to delegate.*
+
+</div>

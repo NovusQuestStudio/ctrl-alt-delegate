@@ -17,7 +17,7 @@ Copy-Item (Join-Path $release 'ctrl-alt-delegate.exe'), (Join-Path $release 'cad
 Copy-Item (Join-Path $root 'apps\vscode\ctrl-alt-delegate-vscode.vsix') $stage
 foreach ($doc in 'README.md', 'LICENSE', 'NOTICE.md', 'CHANGELOG.md', 'SECURITY.md') { Copy-Item (Join-Path $root $doc) $stage }
 # The unzipped folder is itself the Claude Code and Codex plugin marketplace.
-foreach ($dir in '.claude-plugin', '.agents', 'plugins') { Copy-Item -Recurse (Join-Path $root $dir) (Join-Path $stage $dir) }
+foreach ($dir in '.claude-plugin', '.agents', 'plugins', 'docs') { Copy-Item -Recurse (Join-Path $root $dir) (Join-Path $stage $dir) }
 foreach ($plugin in 'claude-code', 'codex', 'antigravity') {
   if (-not (Test-Path (Join-Path $stage "plugins\$plugin\bin\cad.exe"))) { throw "plugins\$plugin\bin\cad.exe is missing" }
 }

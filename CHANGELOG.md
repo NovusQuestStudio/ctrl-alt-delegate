@@ -26,6 +26,8 @@ This project follows [Semantic Versioning](https://semver.org/).
   - **Show commands** lists exactly what Apply will run, with a **Copy** button. Each command is
     also written to the log as it runs.
 - **Windows look:** the app now uses modern Windows controls and is sharp on scaled displays.
+- **Docs:** a new README landing page, plus [Manual setup](docs/manual-setup.md) and
+  [Reference](docs/reference.md) pages. The release zip now includes the `docs` folder.
 
 ## 0.1.0 (2026-11-19)
 
