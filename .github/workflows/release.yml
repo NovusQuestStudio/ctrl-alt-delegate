@@ -30,7 +30,9 @@ jobs:
         run: |
           $zip = Get-ChildItem release/*.zip
           if ($zip.Name -notlike "CtrlAltDelegate-$($env:GITHUB_REF_NAME.TrimStart('v'))-*") { throw "Tag $env:GITHUB_REF_NAME does not match $($zip.Name)" }
-      - uses: actions/attest-build-provenance@v2
+      # GitHub only stores attestations for public repositories on personal accounts.
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: release/*.zip
       - name: Create draft release
