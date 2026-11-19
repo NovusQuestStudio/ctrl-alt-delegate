@@ -54,7 +54,8 @@ Windows 11 first; macOS is planned. Devin's cloud sessions are under investigati
 ## Quick start
 
 1. **Download** `CtrlAltDelegate-<version>-windows-x64.zip` from [Releases](../../releases/latest)
-   and unzip it to a folder you'll keep, such as `%LOCALAPPDATA%\Programs\CtrlAltDelegate`.
+   and unzip it somewhere you'll keep, such as `%LOCALAPPDATA%\Programs`. It creates a `CtrlAltDelegate`
+   folder; to upgrade later, unzip the new version over it.
 2. **Run** `ctrl-alt-delegate.exe`. Windows may say the publisher is unknown, because the app isn't
    code-signed yet: choose **More info → Run anyway**.
 3. **Tick your tools** in the **Connect your tools** window that opens, and click **Apply**.
@@ -123,6 +124,7 @@ Not yet. Windows 11 comes first, and macOS is planned.
 - [Manual setup](docs/manual-setup.md): every command the setup window runs, per tool
 - [Reference](docs/reference.md): tray menu, settings, command line, building from source,
   troubleshooting
+- For maintainers: [publishing to winget](docs/winget.md), [code signing](docs/code-signing.md)
 - [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
 
 ## License

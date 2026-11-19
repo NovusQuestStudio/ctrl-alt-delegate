@@ -4,7 +4,7 @@ The **Connect your tools** window does all of this for you, and **Show commands*
 lists the exact commands with the real paths on your PC. Use this page if you'd rather run them
 yourself.
 
-Use the unzipped release folder (or the repository root, after `scripts\build.ps1 -Extension`)
+Use the unzipped `CtrlAltDelegate` folder (or the repository root, after `scripts\build.ps1 -Extension`)
 wherever a command says `<path to this folder>`. None of these commands change your existing hooks
 or settings; each one adds or removes only Ctrl Alt Delegate's own plugin.
 

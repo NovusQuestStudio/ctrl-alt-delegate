@@ -1,14 +1,20 @@
 # Builds everything and creates the portable release zip plus SHA256SUMS.txt in .\release\.
 # Used locally and by .github/workflows/release.yml.
+# -NoBuild zips what is already built, so files signed after build.ps1 stay signed.
+param([switch]$NoBuild)
 $root = Split-Path $PSScriptRoot -Parent
-& (Join-Path $PSScriptRoot 'build.ps1') -Extension
-if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) { exit 1 }
+if (-not $NoBuild) {
+  & (Join-Path $PSScriptRoot 'build.ps1') -Extension
+  if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) { exit 1 }
+}
 $ErrorActionPreference = 'Stop'
 
 $version = (Select-String -Path (Join-Path $root 'apps\tray\Cargo.toml') -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
 $name = "CtrlAltDelegate-$version-windows-x64"
 $out = Join-Path $root 'release'
-$stage = Join-Path $out $name
+# The folder inside the zip keeps the same name in every version, so unzipping or upgrading in
+# place leaves plugin links, Devin hooks and Start with Windows pointing at the right files.
+$stage = Join-Path $out 'CtrlAltDelegate'
 if (Test-Path $out) { Remove-Item -Recurse -Force $out }
 New-Item -ItemType Directory -Force $stage | Out-Null
 

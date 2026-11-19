@@ -26,6 +26,9 @@ This project follows [Semantic Versioning](https://semver.org/).
   - **Show commands** lists exactly what Apply will run, with a **Copy** button. Each command is
     also written to the log as it runs.
 - **Windows look:** the app now uses modern Windows controls and is sharp on scaled displays.
+- **Release zip:** the folder inside is now always `CtrlAltDelegate`, so you can unzip a new version
+  over the old one and keep your plugin links and Start with Windows. `scripts\winget-manifest.ps1`
+  writes the manifests for listing a release in winget.
 - **Docs:** a new README landing page, plus [Manual setup](docs/manual-setup.md) and
   [Reference](docs/reference.md) pages. The release zip now includes the `docs` folder.
 
