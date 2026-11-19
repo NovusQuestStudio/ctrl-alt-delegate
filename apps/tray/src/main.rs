@@ -88,6 +88,9 @@ fn view(status: &Value, error: Option<&str>) -> View {
 
 struct Ui {
     tray: TrayIcon,
+    menu: Menu,
+    /// The warning row is only in the menu while there is a warning (no blank row otherwise).
+    error_shown: bool,
     discord: MenuItem,
     showing: MenuItem,
     error: MenuItem,
@@ -116,8 +119,20 @@ impl Ui {
         } else {
             format!("Showing: {}", next.showing)
         });
-        self.error.set_text(next.error.as_deref().map(|e| format!("⚠ {}", e.chars().take(80).collect::<String>())).unwrap_or_default());
-        self.error.set_enabled(false);
+        match (&next.error, self.error_shown) {
+            (Some(e), _) => {
+                self.error.set_text(format!("⚠ {}", e.chars().take(80).collect::<String>()));
+                if !self.error_shown {
+                    let _ = self.menu.insert(&self.error, 3);
+                    self.error_shown = true;
+                }
+            }
+            (None, true) => {
+                let _ = self.menu.remove(&self.error);
+                self.error_shown = false;
+            }
+            (None, false) => {}
+        }
         for item in [&self.share, &self.pause, &self.project] {
             item.set_enabled(next.running);
         }
@@ -191,7 +206,7 @@ fn main() {
     let open_log = MenuItem::with_id("log", "Open log", true, None);
     let reconnect = MenuItem::with_id("reconnect", "Reconnect to Discord", true, None);
     let quit = MenuItem::with_id("quit", "Quit (stops sharing)", true, None);
-    let items: [&dyn IsMenuItem; 4] = [&title, &discord, &showing, &error];
+    let items: [&dyn IsMenuItem; 3] = [&title, &discord, &showing];
     for item in items {
         let _ = menu.append(item);
     }
@@ -205,8 +220,11 @@ fn main() {
     for item in items {
         let _ = menu.append(item);
     }
-    let tray = TrayIconBuilder::new().with_menu(Box::new(menu)).with_tooltip(format!("{APP_NAME} — starting")).with_icon(icon(true)).build().expect("create tray icon");
-    let mut ui = Ui { tray, discord, showing, error, share, pause, project, startup, pin, shown: None };
+    // Match the taskbar's dark or light mode before the menu is first shown.
+    let mut dark = cad::theme::taskbar_dark();
+    cad::theme::apply(dark);
+    let tray = TrayIconBuilder::new().with_menu(Box::new(menu.clone())).with_tooltip(format!("{APP_NAME} — starting")).with_icon(icon(true)).build().expect("create tray icon");
+    let mut ui = Ui { tray, menu, error_shown: false, discord, showing, error, share, pause, project, startup, pin, shown: None };
 
     let mut last_refresh = Instant::now() - Duration::from_secs(5);
     let mut last_focus: Option<u32> = None;
@@ -256,6 +274,12 @@ fn main() {
         }
         if last_refresh.elapsed() >= Duration::from_secs(1) || ui.shown.is_none() {
             last_refresh = Instant::now();
+            // Follow Windows if the user switches between light and dark mode.
+            let now_dark = cad::theme::taskbar_dark();
+            if now_dark != dark {
+                dark = now_dark;
+                cad::theme::apply(dark);
+            }
             let status = {
                 let mut c = core.lock().unwrap();
                 c.refresh(now_ms());

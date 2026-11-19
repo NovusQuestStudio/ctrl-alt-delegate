@@ -1,0 +1,9 @@
+# Normalize text files; keep Windows scripts in CRLF; never touch binaries.
+* text=auto
+*.ps1 text eol=crlf
+*.png binary
+*.ico binary
+*.rgba binary
+*.exe binary
+*.vsix binary
+*.zip binary

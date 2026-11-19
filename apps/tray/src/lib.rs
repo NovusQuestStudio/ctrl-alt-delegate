@@ -1,4 +1,4 @@
-//! Ctrl Alt Delegate: one Discord Rich Presence for your development tools and AI coding agents.
+//! Ctrl Alt Delegate: Discord presence for most of your coding tools.
 //! One developer. Multiple agents. One workflow.
 
 pub mod autostart;
@@ -14,6 +14,7 @@ pub mod selector;
 pub mod settings;
 pub mod sha256;
 pub mod store;
+pub mod theme;
 
 /// Display name used consistently in Discord, the tray, and logs.
 pub const APP_NAME: &str = "Ctrl Alt Delegate";

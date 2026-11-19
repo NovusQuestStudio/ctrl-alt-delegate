@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust tests
+        working-directory: apps/tray
+        run: cargo test --locked
+      - name: Rust lint
+        working-directory: apps/tray
+        run: |
+          rustup component add clippy
+          cargo clippy --locked --all-targets -- -D clippy::correctness -D clippy::suspicious
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: VS Code extension tests
+        working-directory: apps/vscode
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm test

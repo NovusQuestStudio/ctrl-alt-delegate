@@ -1,0 +1,44 @@
+name: Release
+
+# Pushing a tag like v0.1.0 builds the Windows zip and creates a DRAFT release.
+# Review the draft on GitHub and publish it by hand.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write      # create the draft release
+  id-token: write      # build provenance
+  attestations: write  # build provenance
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test
+        working-directory: apps/tray
+        run: cargo test --locked --release
+      - name: Build and package
+        shell: pwsh
+        run: ./scripts/package.ps1
+      - name: Check tag matches version
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem release/*.zip
+          if ($zip.Name -notlike "CtrlAltDelegate-$($env:GITHUB_REF_NAME.TrimStart('v'))-*") { throw "Tag $env:GITHUB_REF_NAME does not match $($zip.Name)" }
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: release/*.zip
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = @((Get-ChildItem release/*.zip).FullName, (Resolve-Path release/SHA256SUMS.txt).Path)
+          gh release create $env:GITHUB_REF_NAME @files `
+            --draft --title "Ctrl Alt Delegate $env:GITHUB_REF_NAME" `
+            --notes "See CHANGELOG.md for what's new. Verify the download with SHA256SUMS.txt. Windows may show an unknown-publisher warning because the files aren't code-signed yet."

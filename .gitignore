@@ -10,3 +10,5 @@ dist/
 /apps/vscode/*.vsix
 
 /plugins/*/bin/
+
+/release/

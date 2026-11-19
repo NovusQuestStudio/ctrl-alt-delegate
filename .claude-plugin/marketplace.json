@@ -4,7 +4,7 @@
     "name": "Ctrl Alt Delegate contributors"
   },
   "metadata": {
-    "description": "One Discord Rich Presence for your development tools and AI coding agents."
+    "description": "Discord presence for most of your coding tools."
   },
   "plugins": [
     {

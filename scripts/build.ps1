@@ -14,6 +14,12 @@ foreach ($plugin in 'claude-code', 'codex') {
 }
 if ($Extension) {
   Push-Location (Join-Path $root 'apps\vscode')
-  try { npm install --no-audit --no-fund; npm run package } finally { Pop-Location }
+  # --ignore-scripts: packaging does not need @vscode/vsce-sign's download step.
+  try {
+    npm ci --ignore-scripts --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' }
+    npm run package
+    if ($LASTEXITCODE -ne 0) { throw 'vsce package failed' }
+  } finally { Pop-Location }
 }
 Write-Output "Built: apps\tray\target\release\ctrl-alt-delegate.exe and cad.exe (copied into plugins\*\bin)"

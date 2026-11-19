@@ -17,7 +17,8 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { enabled: true, show_project: false, large_image: String::new(), stale_minutes: 30 }
+        // "ctrl_alt_delegate_icon" is the Rich Presence art asset uploaded to the Ctrl Alt Delegate Discord application.
+        Settings { enabled: true, show_project: false, large_image: "ctrl_alt_delegate_icon".into(), stale_minutes: 30 }
     }
 }
 

@@ -3,7 +3,7 @@ name = "ctrl-alt-delegate"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "One Discord Rich Presence for your development tools and AI coding agents"
+description = "Discord presence for most of your coding tools"
 publish = false
 
 [lib]
@@ -34,6 +34,7 @@ windows = { version = "=0.62.2", features = [
   "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_WindowsProgramming",
   "Win32_System_Registry",
+  "Win32_System_LibraryLoader",
   "Win32_Security",
   "Win32_Security_Authorization",
   "Win32_Storage_FileSystem",

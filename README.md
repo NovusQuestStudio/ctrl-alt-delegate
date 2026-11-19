@@ -2,9 +2,14 @@
 
 **One Developer. Multiple Agents. One Workflow.**
 
-One Discord Rich Presence for your development tools and AI coding agents. A small Windows tray app
+Discord presence for most of your coding tools. A small Windows tray app
 keeps the only connection to Discord. Your editor and agents report what state they're in (working,
 waiting, idle), and the app shows the one that matters most right now.
+
+<p>
+  <img src="docs/screenshots/card-claude-code.png" alt="Discord card: Ctrl Alt Delegate, Claude Code · Working, Delegating to an AI agent" width="380">
+  <img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor" width="380">
+</p>
 
 ## Supported tools
 
@@ -40,6 +45,18 @@ A background agent finishing its work doesn't take the card from the one you're 
 didn't trigger wait 5 seconds before the card switches, so it doesn't flicker. Sessions clear as soon
 as their program exits, and timers survive restarts of the app.
 
+## Install from a release
+
+1. Download `CtrlAltDelegate-<version>-windows-x64.zip` and `SHA256SUMS.txt` from the Releases page.
+2. Check the download in PowerShell: `Get-FileHash -Algorithm SHA256 <zip>` must match `SHA256SUMS.txt`.
+3. Unzip it to a permanent folder, for example `%LOCALAPPDATA%\Programs\CtrlAltDelegate`.
+4. Run `ctrl-alt-delegate.exe`.
+   - Windows may warn about an unknown publisher, because the files aren't code-signed yet. Choose
+     **More info → Run anyway**.
+   - If you move the folder later, turn **Start with Windows** off and on again.
+5. Install the plugins and the VS Code extension with the commands below. Use the unzipped folder
+   wherever they say `<path to this folder>`, and install the `.vsix` from that folder too.
+
 ## Build and run (from source)
 
 Requires the Rust toolchain (and Node.js only to build the VS Code extension).
@@ -51,6 +68,8 @@ cargo build --release --manifest-path apps/tray/Cargo.toml
 Start `apps/tray/target/release/ctrl-alt-delegate.exe`. A tray icon appears. Right-click it to see
 status, share or stop sharing, pause, show the project name, pin a session, start with Windows, open
 the log or settings, reconnect, or quit.
+
+<img src="docs/screenshots/tray-menu.png" alt="Ctrl Alt Delegate tray menu in dark mode" width="620">
 
 **VS Code** (use `code-insiders` for Insiders):
 
@@ -92,11 +111,10 @@ Settings live in `%APPDATA%\CtrlAltDelegate\config.json`. Open the file from the
 apply within a second.
 
 ```json
-{ "enabled": true, "showProject": false, "largeImage": "", "staleMinutes": 30 }
+{ "enabled": true, "showProject": false, "largeImage": "ctrl_alt_delegate_icon", "staleMinutes": 30 }
 ```
 
-`largeImage` is the key of an image uploaded under **Rich Presence → Art Assets** in the Discord
-Developer Portal.
+`largeImage` is the Ctrl Alt Delegate icon by default. To hide the image, set it to `""`.
 
 ## Troubleshooting
 
