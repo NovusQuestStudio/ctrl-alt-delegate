@@ -89,6 +89,12 @@ fn set_text(id: i32, text: &str) {
     }
 }
 
+fn get_text(id: i32) -> String {
+    let mut buf = [0u16; 512];
+    let len = unsafe { GetWindowTextW(item(id), &mut buf) };
+    String::from_utf16_lossy(&buf[..len.max(0) as usize])
+}
+
 fn checked(id: i32) -> bool {
     unsafe { SendMessageW(item(id), BM_GETCHECK, None, None).0 == 1 }
 }
@@ -352,6 +358,9 @@ fn update_apply() {
         }
         let text = format!("Apply will {}.", plan.join(", "));
         set_text(ID_RESULT, &text);
+    } else if count == 0 && !busy && get_text(ID_RESULT).starts_with("Apply will ") {
+        // Every change was undone; clear the plan, but keep the result of an earlier Apply.
+        set_text(ID_RESULT, "");
     }
     // Rows Apply will change say so, in bold accent text; the rest show their normal description.
     let mut lines: Vec<Option<String>> = vec![None; ROWS];

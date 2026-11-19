@@ -415,11 +415,23 @@ impl Change {
     }
 }
 
+/// The other app folder a tool is connected to, if it isn't this one.
+fn other_folder<'a>(tool: Tool, status: &'a Status, root: &Path) -> Option<&'a Path> {
+    status.linked_to.as_deref().filter(|p| !tool.uses_extension() && !same_folder(p, root))
+}
+
+/// The folder as Windows shows it, without the `\\?\` prefix some tools store.
+fn plain(path: &Path) -> PathBuf {
+    PathBuf::from(path.to_string_lossy().trim_start_matches(r"\\?\"))
+}
+
 pub fn change(tool: Tool, status: &Status, wanted: bool, root: &Path) -> Option<Change> {
-    let elsewhere = !tool.uses_extension() && status.linked_to.as_deref().is_some_and(|p| !same_folder(p, root));
+    // Relink on its own only when the other folder is gone (the app was moved). Another copy that
+    // still exists keeps working, so leave it be; untick and tick again to switch to this copy.
+    let moved = other_folder(tool, status, root).is_some_and(|p| !plain(p).exists());
     match (wanted, status.installed) {
         (true, false) => Some(Change::Install),
-        (true, true) if elsewhere => Some(Change::Relink),
+        (true, true) if moved => Some(Change::Relink),
         (false, true) => Some(Change::Remove),
         _ => None,
     }
@@ -499,8 +511,12 @@ pub fn describe(tool: Tool, status: &Status, root: Option<&Path>, vsix_found: bo
         return "Plugin files aren't built yet. Run scripts\\build.ps1 first.".into();
     }
     if status.installed {
-        if let Some(other) = status.linked_to.as_deref().filter(|p| !same_folder(p, root)) {
-            return format!("Connected to another folder ({}). Apply to relink it here.", other.to_string_lossy().trim_start_matches(r"\\?\"));
+        if let Some(other) = other_folder(tool, status, root).map(plain) {
+            return if other.exists() {
+                format!("Connected, using another copy of the app ({}).", other.display())
+            } else {
+                format!("Connected to a folder that's gone ({}). Apply relinks it here.", other.display())
+            };
         }
         return match (tool, status.hooks) {
             (Tool::Codex, Some((approved, expected))) if approved < expected => {
@@ -681,6 +697,19 @@ mod tests {
         assert_eq!(change(Tool::Codex, &moved, false, root), Some(Change::Remove));
         assert_eq!(change(Tool::Codex, &Status::default(), false, root), None);
         assert_eq!(change(Tool::VsCode, &moved, true, root), None, "VS Code copies the extension, so its folder doesn't matter");
+
+        // Another copy of the app that still exists isn't relinked automatically, so unticking means
+        // just "disconnect" and ticking again leaves nothing to do.
+        let other_copy = temp("other-copy");
+        let elsewhere = Status { installed: true, linked_to: Some(other_copy.clone()), ..Status::default() };
+        assert_eq!(change(Tool::Codex, &elsewhere, true, root), None);
+        assert_eq!(change(Tool::Codex, &elsewhere, false, root), Some(Change::Remove));
+        let found = Status { cli: Some(PathBuf::from("x")), ..elsewhere };
+        let here = temp("this-copy");
+        write(&here.join("plugins/codex/bin/cad.exe"), "x");
+        assert!(describe(Tool::Codex, &found, Some(&here), true).starts_with("Connected, using another copy"));
+        let gone = Status { linked_to: Some(PathBuf::from(r"D:\Old")), ..found };
+        assert!(describe(Tool::Codex, &gone, Some(&here), true).contains("Apply relinks it here"));
     }
 
     #[test]
