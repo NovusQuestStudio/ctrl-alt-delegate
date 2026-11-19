@@ -43,11 +43,14 @@ struct View {
     error: Option<String>,
 }
 
-fn label(agent: &str) -> &str {
-    match agent {
-        "claude-code" => "Claude Code",
-        "codex" => "Codex",
-        "vscode" => "VS Code",
+fn label<'a>(agent: &'a str, edition: Option<&'a str>) -> &'a str {
+    match (agent, edition) {
+        ("claude-code", _) => "Claude Code",
+        ("codex", _) => "Codex",
+        ("vscode", Some("insiders")) => "VS Code Insiders",
+        ("vscode", Some("vscodium")) => "VSCodium",
+        ("vscode", Some("cursor")) => "Cursor",
+        ("vscode", _) => "VS Code",
         _ => "Unknown",
     }
 }
@@ -71,7 +74,7 @@ fn view(update: &Update) -> View {
             list.iter()
                 .filter_map(|s| {
                     let key = s.get("key")?.as_str()?.to_string();
-                    let agent = label(s.get("agent")?.as_str()?);
+                    let agent = label(s.get("agent")?.as_str()?, s.get("edition").and_then(|e| e.as_str()));
                     let state = s.get("state")?.as_str()?;
                     // The project name stays on this machine: the tray is local UI, not Discord.
                     let project = s.get("project").and_then(|p| p.as_str()).map(|p| format!(" — {p}")).unwrap_or_default();
@@ -266,7 +269,9 @@ mod tests {
         assert_eq!(down.error.as_deref(), Some("not running"));
         let idle = view(&Update { status: Some(json!({"ok": true, "activity": null, "sessions": []})), error: None });
         assert_eq!(idle.showing, "Nothing");
-        assert_eq!(label("mystery"), "Unknown");
+        assert_eq!(label("mystery", None), "Unknown");
+        assert_eq!(label("vscode", Some("insiders")), "VS Code Insiders");
+        assert_eq!(label("vscode", None), "VS Code");
     }
 
     #[test]

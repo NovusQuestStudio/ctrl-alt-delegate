@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SessionStore} from '../dist/store.js';
 import {Selector, rank} from '../dist/selector.js';
-import {parseEvent, projectName} from '../dist/protocol.js';
+import {parseEvent, projectName, toolLabel, editionFromAppName} from '../dist/protocol.js';
 import {activityFor} from '../dist/presentation.js';
 import {hookEvent} from '../dist/adapters/hooks.js';
 import {Reporter} from '../dist/client.js';
@@ -213,4 +213,22 @@ test('reporter coalesces updates, marks interactions once, closes last, and tole
   assert.ok(sent[1].updatedAt > sent[0].updatedAt);
   const failing = new Reporter('vscode', 's', async () => { throw new Error('offline'); });
   failing.set('working'); await failing.close();
+});
+
+test('editor editions: validated, labelled on the card, and detected from the app name', () => {
+  const v = (extra = {}) => ({version: 1, agent: 'vscode', sessionId: 'w', state: 'working', updatedAt: 1000, ...extra});
+  assert.equal(parseEvent(v({edition: 'insiders'}), 1000).edition, 'insiders');
+  for (const bad of [{edition: 'nightly'}, {edition: 3}]) assert.throws(() => parseEvent(v(bad), 1000), /Invalid edition/);
+  assert.throws(() => parseEvent({...v({edition: 'insiders'}), agent: 'codex'}, 1000), /Invalid edition/);
+  assert.equal(toolLabel({agent: 'vscode'}), 'VS Code');
+  assert.equal(toolLabel({agent: 'vscode', edition: 'insiders'}), 'VS Code Insiders');
+  assert.equal(toolLabel({agent: 'claude-code'}), 'Claude Code');
+  assert.equal(editionFromAppName('Visual Studio Code - Insiders'), 'insiders');
+  assert.equal(editionFromAppName('Visual Studio Code'), undefined);
+  assert.equal(editionFromAppName('VSCodium'), 'vscodium');
+  const store = new SessionStore();
+  store.update(v({edition: 'insiders', interaction: true}), 1000);
+  store.update(v({sessionId: 'stable', updatedAt: 2000, interaction: true}), 2000);
+  assert.equal(activityFor(store.sessions.get('vscode:w')).details, 'VS Code Insiders · Editing');
+  assert.equal(activityFor(store.sessions.get('vscode:stable')).details, 'VS Code · Editing');
 });

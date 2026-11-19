@@ -21,7 +21,7 @@ The card shows a pinned session first, then one in the focused window, then an a
 then the one you prompted most recently. Changes that you didn't trigger wait 5 seconds before
 switching the card. Sessions clear as soon as the agent process exits, and session timers survive
 restarts of the service. A Windows tray app starts the service and controls it. It also reports
-the focused window. Still to come: the VS Code extension and Codex.
+the focused window. A VS Code extension reports when you're editing in a focused window. It works in VS Code Stable and Insiders, and the card names the edition ("VS Code Insiders"). Still to come: Codex.
 
 ## Try it (Windows, Node 22+)
 
@@ -46,6 +46,13 @@ apps/tray/target/release/ctrl-alt-delegate-tray.exe
 
 The tray menu shows Discord and activity status, and has controls to share or stop sharing,
 pause, show the project name, pin a session, and restart the service.
+
+VS Code (Insiders shown; use `code` for stable). Build and install the extension from a local file:
+
+```bash
+cd apps/vscode && npm install && npm run package
+code-insiders --install-extension ctrl-alt-delegate-vscode.vsix
+```
 
 Useful commands: `node dist/cli.js status`, `pause`, `resume`, `pin AGENT:ID`, `unpin`, `stop`.
 

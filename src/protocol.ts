@@ -25,8 +25,24 @@ export interface PresenceEvent {
    * user enables `showProject`.
    */
   project?: string;
+  /** Which build of the editor reported this (VS Code family only). Absent means VS Code stable. */
+  edition?: Edition;
 }
 export const labels: Record<Agent, string> = {'claude-code': 'Claude Code', codex: 'Codex', vscode: 'VS Code'};
+export const editions = ['insiders', 'vscodium', 'cursor'] as const;
+export type Edition = typeof editions[number];
+const editionLabels: Record<Edition, string> = {insiders: 'VS Code Insiders', vscodium: 'VSCodium', cursor: 'Cursor'};
+/** Display name for a session's tool, including the editor edition. */
+export function toolLabel(e: Pick<PresenceEvent, 'agent' | 'edition'>): string {
+  return e.agent === 'vscode' && e.edition ? editionLabels[e.edition] : labels[e.agent];
+}
+/** Map VS Code's `env.appName` to an edition; unknown names count as stable. */
+export function editionFromAppName(appName: string): Edition | undefined {
+  if (/insiders/i.test(appName)) return 'insiders';
+  if (/vscodium/i.test(appName)) return 'vscodium';
+  if (/cursor/i.test(appName)) return 'cursor';
+  return undefined;
+}
 const states: readonly State[] = ['idle', 'working', 'waiting', 'error', 'closed'];
 /** Reduce a path to a safe display name: last segment, no control characters, bounded. */
 export function projectName(value: unknown): string | undefined {
@@ -47,11 +63,12 @@ export function parseEvent(value: unknown, now = Date.now()): PresenceEvent {
   for (const key of ['continuation', 'interaction'] as const) if (e[key] !== undefined && typeof e[key] !== 'boolean') throw new Error(`Invalid ${key}`);
   if (e.ppid !== undefined && (!Number.isSafeInteger(e.ppid) || (e.ppid as number) <= 0)) throw new Error('Invalid ppid');
   if (e.project !== undefined && (typeof e.project !== 'string' || projectName(e.project) !== e.project)) throw new Error('Invalid project');
+  if (e.edition !== undefined && (e.agent !== 'vscode' || !editions.includes(e.edition as Edition))) throw new Error('Invalid edition');
   // Whitelist fields: never retain prompts, paths, file names, or tool arguments.
   return {version: 1, agent: e.agent as Agent, sessionId: e.sessionId, state: e.state as State, updatedAt: e.updatedAt,
     pid: e.pid as number | undefined, heartbeat: e.heartbeat as boolean | undefined,
     continuation: e.continuation as boolean | undefined, interaction: e.interaction as boolean | undefined,
-    ppid: e.ppid as number | undefined, project: e.project as string | undefined};
+    ppid: e.ppid as number | undefined, project: e.project as string | undefined, edition: e.edition as Edition | undefined};
 }
 export function sessionKey(e: Pick<PresenceEvent, 'agent' | 'sessionId'>): string {
   return `${e.agent}:${e.sessionId}`;

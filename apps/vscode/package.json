@@ -1,0 +1,35 @@
+{
+  "name": "ctrl-alt-delegate-vscode",
+  "displayName": "Ctrl Alt Delegate",
+  "description": "Reports editor activity (never file names or code) to the local Ctrl Alt Delegate Discord presence service.",
+  "version": "0.1.0",
+  "publisher": "ctrl-alt-delegate",
+  "license": "MIT",
+  "private": true,
+  "repository": {"type": "git", "url": "local"},
+  "engines": {"vscode": "^1.140.0"},
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/apps/vscode/src/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Ctrl Alt Delegate",
+      "properties": {
+        "ctrlAltDelegate.enabled": {"type": "boolean", "default": true, "description": "Report this window's editing activity to the local Ctrl Alt Delegate service."},
+        "ctrlAltDelegate.idleMinutes": {"type": "number", "default": 5, "minimum": 1, "maximum": 120, "description": "Minutes without editing before this window shows as idle."},
+        "ctrlAltDelegate.closeAfterMinutes": {"type": "number", "default": 30, "minimum": 5, "maximum": 1440, "description": "Minutes without editing before this window's session is cleared."}
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "npm run build && node --test \"test/*.test.js\"",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --out ctrl-alt-delegate-vscode.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.140.0",
+    "@vscode/vsce": "4.0.0",
+    "typescript": "^5.9.0"
+  }
+}

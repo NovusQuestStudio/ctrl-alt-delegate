@@ -131,7 +131,7 @@ export async function startDaemon(options: DaemonOptions = {}) {
           ok: true, discord: transport.status, profile: transport.user ?? null, activityAcknowledged: transport.acknowledged ?? null,
           enabled: settings.enabled, showProject: settings.showProject, paused, pinned: store.pinned, focus, pid: process.pid, settingsError,
           activity: currentActivity(), selected: shown ? sessionKey(shown) : null,
-          sessions: [...store.sessions.values()].map(s => ({key: sessionKey(s), agent: s.agent, state: s.state, project: s.project,
+          sessions: [...store.sessions.values()].map(s => ({key: sessionKey(s), agent: s.agent, edition: s.edition ?? null, state: s.state, project: s.project,
             startedAt: s.startedAt, updatedAt: s.updatedAt, lastSeen: s.lastSeen, lastInteraction: s.lastInteraction,
             agentPid: s.agentPid ?? null, agentName: s.agentName ?? null})),
         } : {ok: true}) + '\n');

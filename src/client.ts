@@ -2,7 +2,7 @@ import {createConnection} from 'node:net';
 import {join} from 'node:path';
 import {tmpdir, userInfo} from 'node:os';
 import {createHash} from 'node:crypto';
-import type {Agent, PresenceEvent, State} from './protocol.js';
+import type {Agent, Edition, PresenceEvent, State} from './protocol.js';
 let lastTimestamp = 0;
 /** Per-user identifier so two Windows/macOS accounts never share a service endpoint. */
 export function userId(): string {
@@ -49,15 +49,20 @@ export class Reporter {
   project?: string;
   /** Set before `set()` when the update is caused by the user; cleared after sending. */
   interaction = false;
+  /** Parent of the reporting process (e.g. VS Code's main process), so the service can match focus and host liveness. */
+  ppid?: number;
+  /** Editor build (VS Code family only); absent for stable. */
+  edition?: Edition;
   constructor(readonly agent: Agent, readonly sessionId: string,
     private readonly send: (event: PresenceEvent) => Promise<void> = emit) {}
   set(state: State): void {
     const updatedAt = Math.max(Date.now(), lastTimestamp + 1);
     lastTimestamp = updatedAt;
     this.event = {version: 1, agent: this.agent, sessionId: this.sessionId, state, updatedAt, pid: process.pid,
-      ...(this.project ? {project: this.project} : {}), ...(this.interaction ? {interaction: true} : {})};
+      ...(this.project ? {project: this.project} : {}), ...(this.ppid ? {ppid: this.ppid} : {}),
+      ...(this.edition ? {edition: this.edition} : {})};
+    this.enqueue(this.interaction ? {...this.event, interaction: true} : this.event);
     this.interaction = false;
-    this.enqueue(this.event);
     if (!this.timer && state !== 'closed') {
       this.timer = setInterval(() => {
         if (this.event) this.enqueue({...this.event, heartbeat: true});

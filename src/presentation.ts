@@ -1,5 +1,5 @@
 import {APP_NAME} from './constants.js';
-import {labels} from './protocol.js';
+import {toolLabel} from './protocol.js';
 import type {Session} from './store.js';
 import type {Settings} from './settings.js';
 
@@ -18,7 +18,7 @@ const editorPhases = {idle: 'Idle', working: 'Editing', waiting: 'Idle', error: 
  */
 export function activityFor(session: Session | undefined, display: Display = {showProject: false, largeImage: ''}): Activity | null {
   if (!session) return null;
-  const label = labels[session.agent];
+  const label = toolLabel(session);
   const phase = (session.agent === 'vscode' ? editorPhases : agentPhases)[session.state];
   const state = display.showProject && session.project ? session.project
     : session.agent === 'vscode' ? 'In the editor' : 'Delegating to an AI agent';

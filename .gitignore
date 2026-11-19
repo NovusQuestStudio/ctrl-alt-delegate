@@ -4,3 +4,7 @@ dist/
 .DS_Store
 
 /apps/tray/target/
+
+/apps/vscode/dist/
+/apps/vscode/node_modules/
+/apps/vscode/*.vsix
