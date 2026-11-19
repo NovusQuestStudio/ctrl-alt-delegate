@@ -10,6 +10,8 @@ This project follows [Semantic Versioning](https://semver.org/).
   - Shows whether Codex hooks are approved, and updates when you switch back from Codex.
   - Detects a moved app folder and relinks the plugins.
   - Uses each tool's own installer and adds only the Ctrl Alt Delegate plugin.
+  - **Show commands** lists exactly what Apply will run, with a **Copy** button. Each command is
+    also written to the log as it runs.
 - **Windows look:** the app now uses modern Windows controls and is sharp on scaled displays.
 
 ## 0.1.0 (2026-11-19)

@@ -27,6 +27,9 @@ const ID_RESULT: i32 = 400;
 const ID_REFRESH: i32 = 501;
 const ID_APPLY: i32 = 502;
 const ID_CLOSE: i32 = 503;
+const ID_SHOW: i32 = 504;
+const ID_COPY: i32 = 505;
+const ID_COMMANDS: i32 = 600;
 const WM_DONE: u32 = WM_APP + 1;
 const TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -47,6 +50,7 @@ struct Paint {
     font: HFONT,
     bold: HFONT,
     title: HFONT,
+    mono: HFONT,
     dpi: i32,
 }
 
@@ -56,6 +60,8 @@ thread_local! {
     static PAINT: Cell<Option<Paint>> = const { Cell::new(None) };
     /// Rows the user can change right now (drawn in the normal text colour).
     static AVAILABLE: Cell<[bool; ROWS]> = const { Cell::new([false; ROWS]) };
+    /// True while the commands view replaces the tool rows.
+    static SHOWING: Cell<bool> = const { Cell::new(false) };
 }
 
 fn rgb(r: u8, g: u8, b: u8) -> COLORREF {
@@ -155,6 +161,10 @@ unsafe fn create(dark: bool) {
     let base = metrics.lfMessageFont;
     let bold = LOGFONTW { lfWeight: 600, ..base };
     let title = LOGFONTW { lfWeight: 600, lfHeight: base.lfHeight * 3 / 2, ..base };
+    let mut mono = LOGFONTW { lfWeight: 400, ..base };
+    let face: Vec<u16> = "Consolas".encode_utf16().collect();
+    mono.lfFaceName = [0; 32];
+    mono.lfFaceName[..face.len()].copy_from_slice(&face);
     let (bg, text, muted) = if dark { (rgb(32, 32, 32), rgb(240, 240, 240), rgb(170, 170, 170)) } else { (rgb(249, 249, 249), rgb(26, 26, 26), rgb(96, 96, 96)) };
     PAINT.set(Some(Paint {
         background: CreateSolidBrush(bg),
@@ -164,6 +174,7 @@ unsafe fn create(dark: bool) {
         font: CreateFontIndirectW(&base),
         bold: CreateFontIndirectW(&bold),
         title: CreateFontIndirectW(&title),
+        mono: CreateFontIndirectW(&mono),
         dpi: GetDpiForSystem() as i32,
     }));
 
@@ -204,8 +215,16 @@ unsafe fn create(dark: bool) {
         control(hwnd, w!("STATIC"), name, 0x100 /* SS_NOTIFY */, ID_NAME + row as i32, (52, y, 484, 22), p.bold);
         control(hwnd, w!("STATIC"), "", 0x100, ID_DETAIL + row as i32, (52, y + 22, 484, 38), p.font);
     }
+    // The commands view: hidden until "Show commands", then it takes the place of the tool rows.
+    let edit = 0x4 /* ES_MULTILINE */ | 0x40 /* ES_AUTOVSCROLL */ | 0x800 /* ES_READONLY */;
+    control(hwnd, w!("EDIT"), "", WS_TABSTOP.0 | WS_VSCROLL.0 | WS_BORDER.0 | edit, ID_COMMANDS, (24, 104, 512, 280), p.mono);
+    control(hwnd, w!("BUTTON"), "Copy", WS_TABSTOP.0, ID_COPY, (436, 392, 100, 30), p.font);
+    for id in [ID_COMMANDS, ID_COPY] {
+        let _ = ShowWindow(item(id), SW_HIDE);
+    }
     control(hwnd, w!("STATIC"), "", 0, ID_RESULT, (24, 428, 512, 56), p.font);
     control(hwnd, w!("BUTTON"), "Refresh", WS_TABSTOP.0, ID_REFRESH, (24, 492, 104, 32), p.font);
+    control(hwnd, w!("BUTTON"), "Show commands", WS_TABSTOP.0, ID_SHOW, (136, 492, 150, 32), p.font);
     control(hwnd, w!("BUTTON"), "Apply", WS_TABSTOP.0 | 1 /* BS_DEFPUSHBUTTON */, ID_APPLY, (320, 492, 112, 32), p.font);
     control(hwnd, w!("BUTTON"), "Close", WS_TABSTOP.0, ID_CLOSE, (440, 492, 96, 32), p.font);
 }
@@ -323,6 +342,59 @@ fn update_apply() {
     enable(ID_REFRESH, !busy);
 }
 
+/// The exact commands Apply would run now, ready to paste into PowerShell.
+fn commands_text() -> String {
+    let (jobs, startup) = pending();
+    if jobs.is_empty() && startup.is_none() {
+        return "Nothing to run yet.\r\n\r\nTick a tool to connect it or untick one to disconnect it, then click Show commands again.".into();
+    }
+    let mut text = String::from("# Apply runs these commands, in order. You can also paste them into PowerShell.\r\n");
+    for (tool, change, commands) in &jobs {
+        text.push_str(&format!("\r\n# {}: {}\r\n", tool.label(), change.verb()));
+        for command in commands {
+            text.push_str(&setup::display(command));
+            text.push_str("\r\n");
+        }
+    }
+    if let Some(on) = startup {
+        text.push_str(&format!(
+            "\r\n# Start with Windows: {} (no command; Apply changes this directly)\r\n# {} the value \"Ctrl Alt Delegate\" under {}\r\n",
+            if on { "on" } else { "off" },
+            if on { "Adds" } else { "Removes" },
+            r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
+        ));
+    }
+    text
+}
+
+/// Swaps the tool rows for the commands view, or back.
+fn show_commands(show: bool) {
+    SHOWING.set(show);
+    if show {
+        set_text(ID_COMMANDS, &commands_text());
+    }
+    let rows = (0..ROWS as i32).flat_map(|i| [ID_CHECK + i, ID_NAME + i, ID_DETAIL + i]);
+    unsafe {
+        for id in rows {
+            let _ = ShowWindow(item(id), if show { SW_HIDE } else { SW_SHOW });
+        }
+        for id in [ID_COMMANDS, ID_COPY] {
+            let _ = ShowWindow(item(id), if show { SW_SHOW } else { SW_HIDE });
+        }
+    }
+    set_text(ID_SHOW, if show { "Hide commands" } else { "Show commands" });
+}
+
+fn copy_commands() {
+    unsafe {
+        let edit = item(ID_COMMANDS);
+        SendMessageW(edit, 0x00B1 /* EM_SETSEL */, Some(WPARAM(0)), Some(LPARAM(-1)));
+        SendMessageW(edit, WM_COPY, None, None);
+        SendMessageW(edit, 0x00B1, Some(WPARAM(usize::MAX)), Some(LPARAM(0)));
+    }
+    set_text(ID_RESULT, "Commands copied.");
+}
+
 fn apply() {
     let (jobs, startup) = pending();
     if jobs.is_empty() && startup.is_none() {
@@ -340,6 +412,9 @@ fn apply() {
         update_apply();
         return;
     }
+    if SHOWING.get() {
+        show_commands(false);
+    }
     MODEL.with_borrow_mut(|m| {
         if let Some(m) = m.as_mut() {
             m.busy = true;
@@ -355,7 +430,10 @@ fn apply() {
     let target = hwnd.0 as isize; // HWND isn't Send; the raw handle is.
     std::thread::spawn(move || {
         for (tool, change, commands) in jobs {
-            let result = commands.iter().try_for_each(|c| setup::run(c, TIMEOUT).map(drop));
+            let result = commands.iter().try_for_each(|c| {
+                log::write(&format!("Setup: running {}", setup::display(c)));
+                setup::run(c, TIMEOUT).map(drop)
+            });
             let line = match &result {
                 Ok(()) => format!("{}: {}", tool.label(), setup::after(tool, change)),
                 Err(e) => format!("{}: couldn't {} ({e}).", tool.label(), change.verb()),
@@ -390,6 +468,8 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
                 ID_APPLY => apply(),
                 ID_REFRESH if !busy => refresh(false),
                 ID_CLOSE | 2 /* IDCANCEL: Esc */ => close(),
+                ID_SHOW => show_commands(!SHOWING.get()),
+                ID_COPY => copy_commands(),
                 _ if (ID_CHECK..ID_CHECK + ROWS as i32).contains(&id) => update_apply(),
                 // Clicking a tool's name or description toggles its checkbox.
                 _ if code == 0 && !busy && (ID_NAME..ID_DETAIL + ROWS as i32).contains(&id) => {
@@ -444,10 +524,11 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
         }
         WM_DESTROY => {
             WINDOW.set(None);
+            SHOWING.set(false);
             MODEL.set(None);
             if let Some(p) = PAINT.take() {
                 let _ = DeleteObject(p.background.into());
-                for font in [p.font, p.bold, p.title] {
+                for font in [p.font, p.bold, p.title, p.mono] {
                     let _ = DeleteObject(font.into());
                 }
             }

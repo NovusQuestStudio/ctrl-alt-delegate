@@ -68,7 +68,9 @@ as their program exits, and timers survive restarts of the app.
 
 The window runs each tool's own installer (`code --install-extension`, `claude plugin`,
 `codex plugin`). It adds only the Ctrl Alt Delegate plugin and doesn't change any other settings or hooks.
-To do the same by hand, use the commands under **Manual setup** below.
+Click **Show commands** to see exactly what **Apply** will run, with the real paths on your PC, and
+**Copy** them to run yourself in PowerShell instead. Each command is also written to the log as it
+runs. The general commands are under **Manual setup** below.
 
 ## Build and run (from source)
 

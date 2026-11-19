@@ -381,6 +381,22 @@ pub fn after(tool: Tool, change: Change) -> &'static str {
     }
 }
 
+/// A command as you'd type it in PowerShell: `& "C:\path\tool.exe" plugin add name`.
+pub fn display(command: &[OsString]) -> String {
+    let quote = |a: &OsString| {
+        let a = a.to_string_lossy();
+        if a.is_empty() || a.contains(|c: char| c.is_whitespace() || "&()'\"`;,{}$@#|<>".contains(c)) {
+            format!("\"{}\"", a.replace('`', "``").replace('"', "`\"").replace('$', "`$"))
+        } else {
+            a.into_owned()
+        }
+    };
+    match command.split_first() {
+        Some((program, args)) => std::iter::once(format!("& \"{}\"", program.to_string_lossy())).chain(args.iter().map(quote)).collect::<Vec<_>>().join(" "),
+        None => String::new(),
+    }
+}
+
 /// Runs a command with no console window. Returns its output, or the error to show.
 pub fn run(command: &[OsString], timeout: Duration) -> Result<String, String> {
     let (program, args) = command.split_first().ok_or("empty command")?;
@@ -541,6 +557,15 @@ mod tests {
         assert_eq!(describe(Tool::Codex, &approved, Some(&root), true), "Connected. Hooks approved.");
         assert!(describe(Tool::VsCode, &found, Some(&root), false).contains("extension file"));
         assert!(after(Tool::Codex, Change::Install).contains("approve"));
+    }
+
+    #[test]
+    fn shows_commands_ready_for_powershell() {
+        let cmd: Vec<OsString> = [r"C:\Program Files\Codex\codex.exe", "plugin", "marketplace", "add", r"C:\My Apps\CAD"].map(OsString::from).to_vec();
+        assert_eq!(display(&cmd), r#"& "C:\Program Files\Codex\codex.exe" plugin marketplace add "C:\My Apps\CAD""#);
+        let odd: Vec<OsString> = ["tool.exe", "a$b", ""].map(OsString::from).to_vec();
+        assert_eq!(display(&odd), r#"& "tool.exe" "a`$b" """#);
+        assert_eq!(display(&[]), "");
     }
 
     #[test]
