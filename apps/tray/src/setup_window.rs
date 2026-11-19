@@ -378,9 +378,14 @@ fn update_apply() {
     }
     let details = DETAILS.with_borrow(Clone::clone);
     let mut pending = [false; ROWS];
-    let fonts = PAINT.get().map(|p| (p.font, p.bold));
     for (row, line) in lines.iter().enumerate() {
         pending[row] = line.is_some();
+    }
+    // Set before changing any text: each change repaints the row at once, and the paint reads
+    // PENDING to pick the accent colour.
+    PENDING.set(pending);
+    let fonts = PAINT.get().map(|p| (p.font, p.bold));
+    for (row, line) in lines.iter().enumerate() {
         let normal = details.get(row).map_or("", String::as_str);
         set_text(ID_DETAIL + row as i32, line.as_deref().unwrap_or(normal));
         if let Some((font, bold)) = fonts {
@@ -390,7 +395,6 @@ fn update_apply() {
             }
         }
     }
-    PENDING.set(pending);
     set_text(ID_APPLY, &match count {
         0 => "Apply".to_string(),
         1 => "Apply 1 change".to_string(),
