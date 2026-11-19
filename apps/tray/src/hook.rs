@@ -1,4 +1,5 @@
-//! Claude Code and Codex lifecycle hooks: read the hook payload from stdin and report state only.
+//! Claude Code, Codex and Devin lifecycle hooks: read the hook payload from stdin and report state only.
+//! Devin uses the same event names as Claude Code, and also runs Claude Code's hooks by default.
 //! Reads the session id, event name, notification type, compaction source, and the folder name of `cwd`.
 //! Prompts, tool input, transcripts, and assistant text are never read.
 
@@ -36,13 +37,34 @@ pub fn hook_event(agent: Agent, payload: &Value, now: i64) -> Option<Event> {
         continuation: CONTINUATIONS.contains(&name),
         interaction: name == "UserPromptSubmit" || (name == "SessionStart" && !compact),
         ppid: None,
-        project: payload.get("cwd").and_then(Value::as_str).and_then(project_name),
+        project: payload.get("cwd").and_then(Value::as_str).and_then(project_name).or_else(|| {
+            // Devin's payload has no cwd; it puts the project folder in the environment instead.
+            (agent == Agent::Devin).then(|| std::env::var("DEVIN_PROJECT_DIR").ok()).flatten().as_deref().and_then(project_name)
+        }),
         edition: None,
     })
 }
 
+/// Antigravity's hooks don't say which event fired (the plugin passes it as an argument) and use
+/// their own field names. This turns one into the Claude Code shape `hook_event` reads, or None for
+/// events that change nothing. Antigravity has no prompt-submitted, waiting or session-end event.
+pub fn antigravity_payload(event: &str, raw: &Value) -> Option<Value> {
+    let name = match event {
+        "SessionStart" => "SessionStart",
+        // The first model call after the user's message starts a turn; later calls continue it.
+        "PreInvocation" if raw.get("invocationNum").and_then(Value::as_u64) == Some(0) => "UserPromptSubmit",
+        "PreInvocation" | "PreToolUse" | "PostToolUse" => "PostToolUse",
+        // Background tasks still running mean the agent isn't done yet.
+        "Stop" if raw.get("fullyIdle").and_then(Value::as_bool) == Some(false) => return None,
+        "Stop" => "Stop",
+        _ => return None,
+    };
+    let cwd = raw.get("workspacePaths").and_then(Value::as_array).and_then(|p| p.first()).cloned().unwrap_or(Value::Null);
+    Some(serde_json::json!({"session_id": raw.get("conversationId")?, "hook_event_name": name, "cwd": cwd}))
+}
+
 /// Hooks are advisory: they never print, never fail the agent, and give up quickly.
-pub fn run(agent: Agent) {
+pub fn run(agent: Agent, event: Option<&str>) {
     let now = crate::now_ms(); // Stamp before reading stdin; delivery order need not match hook order.
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -54,7 +76,12 @@ pub fn run(agent: Agent) {
     if data.len() > 1024 * 1024 {
         return;
     }
-    let Ok(payload) = serde_json::from_slice::<Value>(&data) else { return };
+    let Ok(mut payload) = serde_json::from_slice::<Value>(&data) else { return };
+    if agent == Agent::Antigravity {
+        let Some(converted) = event.and_then(|e| antigravity_payload(e, &payload)) else { return };
+        payload = converted;
+    }
+    let agent = actual_agent(agent);
     let Some(mut event) = hook_event(agent, &payload, now) else { return };
     if event.state != State::Closed {
         // The parent (a shell, or the agent itself) is alive while this hook runs, so the service can
@@ -63,6 +90,26 @@ pub fn run(agent: Agent) {
     }
     let message = serde_json::json!({"type": "event", "event": event.to_json()});
     let _ = crate::ipc::request(&crate::ipc::service_path(), &message, Duration::from_millis(1500));
+}
+
+/// Devin runs Claude Code's hooks too (its `read_config_from.claude` default), so a "claude-code" hook
+/// may really be Devin. The agent is whichever program is the hook's nearest non-shell ancestor.
+fn actual_agent(declared: Agent) -> Agent {
+    if declared != Agent::ClaudeCode {
+        return declared;
+    }
+    let Some(parent) = crate::process::parent_pid() else { return declared };
+    let Ok(table) = crate::process::snapshot() else { return declared };
+    let chain = crate::process::ancestry(&table, parent, 16);
+    match crate::process::find_agent(&chain) {
+        Some(p) if is_devin(&p.name) => Agent::Devin,
+        _ => declared,
+    }
+}
+
+fn is_devin(process: &str) -> bool {
+    let lower = process.to_ascii_lowercase();
+    lower.strip_suffix(".exe").unwrap_or(&lower) == "devin"
 }
 
 #[cfg(test)]
@@ -99,5 +146,38 @@ mod tests {
         assert_eq!(e.project.as_deref(), Some("my-app"));
         assert!(!e.to_json().to_string().contains("secret"));
         assert!(hook_event(Agent::Codex, &json!({"hook_event_name": "Stop"}), 1).is_none(), "no session id, no event");
+    }
+
+    #[test]
+    fn antigravity_events_map_to_states() {
+        let raw = |extra: Value| {
+            let mut v = json!({"conversationId": "conv-1", "workspacePaths": ["C:\\work\\my-app"], "lastUserInput": "secret prompt"});
+            for (k, x) in extra.as_object().unwrap() {
+                v[k] = x.clone();
+            }
+            v
+        };
+        let event = |name: &str, extra: Value| antigravity_payload(name, &raw(extra)).and_then(|p| hook_event(Agent::Antigravity, &p, 9));
+        let first = event("PreInvocation", json!({"invocationNum": 0})).unwrap();
+        assert_eq!((first.state, first.interaction, first.session_id.as_str()), (State::Working, true, "conv-1"));
+        assert_eq!(first.project.as_deref(), Some("my-app"));
+        assert!(!first.to_json().to_string().contains("secret"), "the prompt is never passed on");
+        let later = event("PreInvocation", json!({"invocationNum": 3})).unwrap();
+        assert_eq!((later.state, later.interaction), (State::Working, false));
+        assert_eq!(event("PostToolUse", json!({})).unwrap().state, State::Working);
+        assert_eq!(event("SessionStart", json!({})).unwrap().state, State::Idle);
+        assert_eq!(event("Stop", json!({"fullyIdle": true})).unwrap().state, State::Idle);
+        assert!(event("Stop", json!({"fullyIdle": false})).is_none(), "background work keeps it working");
+        assert!(event("PostInvocation", json!({})).is_none());
+        assert!(antigravity_payload("Stop", &json!({"fullyIdle": true})).is_none(), "no conversation id, no event");
+    }
+
+    #[test]
+    fn devin_uses_the_claude_events() {
+        let start = hook_event(Agent::Devin, &json!({"session_id": "d", "hook_event_name": "UserPromptSubmit", "prompt_id": "p"}), 5).unwrap();
+        assert_eq!((start.agent, start.state, start.interaction), (Agent::Devin, State::Working, true));
+        assert_eq!(hook_event(Agent::Devin, &json!({"session_id": "d", "hook_event_name": "PermissionRequest"}), 6).unwrap().state, State::Waiting);
+        assert_eq!(hook_event(Agent::Devin, &json!({"session_id": "d", "hook_event_name": "Stop", "stop_hook_active": false}), 7).unwrap().state, State::Idle);
+        assert!(is_devin("devin.exe") && is_devin("Devin.exe") && !is_devin("devin-desktop.exe") && !is_devin("claude.exe"));
     }
 }

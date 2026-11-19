@@ -7,6 +7,8 @@ use serde_json::{json, Map, Value};
 pub enum Agent {
     ClaudeCode,
     Codex,
+    Devin,
+    Antigravity,
     Vscode,
 }
 
@@ -15,6 +17,8 @@ impl Agent {
         match s {
             "claude-code" => Some(Agent::ClaudeCode),
             "codex" => Some(Agent::Codex),
+            "devin" => Some(Agent::Devin),
+            "antigravity" => Some(Agent::Antigravity),
             "vscode" => Some(Agent::Vscode),
             _ => None,
         }
@@ -23,6 +27,8 @@ impl Agent {
         match self {
             Agent::ClaudeCode => "claude-code",
             Agent::Codex => "codex",
+            Agent::Devin => "devin",
+            Agent::Antigravity => "antigravity",
             Agent::Vscode => "vscode",
         }
     }
@@ -30,6 +36,8 @@ impl Agent {
         match self {
             Agent::ClaudeCode => "Claude Code",
             Agent::Codex => "Codex",
+            Agent::Devin => "Devin",
+            Agent::Antigravity => "Antigravity",
             Agent::Vscode => "VS Code",
         }
     }
@@ -77,6 +85,7 @@ pub enum Edition {
     Cursor,
     Windsurf,
     Devin,
+    Antigravity,
 }
 
 impl Edition {
@@ -87,6 +96,7 @@ impl Edition {
             "cursor" => Some(Edition::Cursor),
             "windsurf" => Some(Edition::Windsurf),
             "devin" => Some(Edition::Devin),
+            "antigravity" => Some(Edition::Antigravity),
             _ => None,
         }
     }
@@ -97,6 +107,7 @@ impl Edition {
             Edition::Cursor => "cursor",
             Edition::Windsurf => "windsurf",
             Edition::Devin => "devin",
+            Edition::Antigravity => "antigravity",
         }
     }
     pub fn label(self) -> &'static str {
@@ -106,6 +117,7 @@ impl Edition {
             Edition::Cursor => "Cursor",
             Edition::Windsurf => "Windsurf",
             Edition::Devin => "Devin Desktop",
+            Edition::Antigravity => "Antigravity",
         }
     }
 }

@@ -7,7 +7,7 @@ cargo build --release --manifest-path (Join-Path $root 'apps\tray\Cargo.toml')
 if ($LASTEXITCODE -ne 0) { Write-Error 'cargo build failed'; exit 1 }
 $ErrorActionPreference = 'Stop'
 $cad = Join-Path $root 'apps\tray\target\release\cad.exe'
-foreach ($plugin in 'claude-code', 'codex') {
+foreach ($plugin in 'claude-code', 'codex', 'antigravity') {
   $bin = Join-Path $root "plugins\$plugin\bin"
   New-Item -ItemType Directory -Force $bin | Out-Null
   Copy-Item $cad (Join-Path $bin 'cad.exe') -Force

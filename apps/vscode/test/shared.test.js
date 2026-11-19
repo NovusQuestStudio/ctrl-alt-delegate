@@ -21,6 +21,7 @@ test('folder names and editor editions', () => {
   assert.equal(editionFromAppName('Visual Studio Code - Insiders'), 'insiders');
   assert.equal(editionFromAppName('Visual Studio Code'), undefined);
   assert.equal(editionFromAppName('Windsurf'), 'windsurf');
+  assert.equal(editionFromAppName('Antigravity IDE'), 'antigravity');
   assert.equal(editionFromAppName('Devin'), 'devin');
   assert.equal(toolLabel({agent: 'vscode', edition: 'devin'}), 'Devin Desktop');
   assert.equal(toolLabel({agent: 'vscode'}), 'VS Code');

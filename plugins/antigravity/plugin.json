@@ -1,0 +1,9 @@
+{
+  "name": "ctrl-alt-delegate",
+  "version": "0.1.0",
+  "description": "Reports session state (never prompts, code, or file names) to the local Ctrl Alt Delegate Discord presence app.",
+  "license": "MIT",
+  "author": {
+    "name": "Ctrl Alt Delegate contributors"
+  }
+}

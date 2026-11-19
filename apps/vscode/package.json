@@ -6,18 +6,43 @@
   "publisher": "ctrl-alt-delegate",
   "license": "MIT",
   "private": true,
-  "repository": {"type": "git", "url": "local"},
-  "engines": {"vscode": "^1.140.0"},
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "repository": {
+    "type": "git",
+    "url": "local"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/apps/vscode/src/extension.js",
   "contributes": {
     "configuration": {
       "title": "Ctrl Alt Delegate",
       "properties": {
-        "ctrlAltDelegate.enabled": {"type": "boolean", "default": true, "description": "Report this window's editing activity to the local Ctrl Alt Delegate service."},
-        "ctrlAltDelegate.idleMinutes": {"type": "number", "default": 5, "minimum": 1, "maximum": 120, "description": "Minutes without editing before this window shows as idle."},
-        "ctrlAltDelegate.closeAfterMinutes": {"type": "number", "default": 30, "minimum": 5, "maximum": 1440, "description": "Minutes without editing before this window's session is cleared."}
+        "ctrlAltDelegate.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Report this window's editing activity to the local Ctrl Alt Delegate service."
+        },
+        "ctrlAltDelegate.idleMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Minutes without editing before this window shows as idle."
+        },
+        "ctrlAltDelegate.closeAfterMinutes": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 1440,
+          "description": "Minutes without editing before this window's session is cleared."
+        }
       }
     }
   },
@@ -28,7 +53,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@types/vscode": "1.140.0",
+    "@types/vscode": "1.85.0",
     "@vscode/vsce": "4.0.0",
     "typescript": "^5.9.0"
   }

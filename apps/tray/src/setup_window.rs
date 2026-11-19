@@ -17,8 +17,8 @@ use windows::Win32::UI::HiDpi::{GetDpiForSystem, SetProcessDpiAwarenessContext, 
 use windows::Win32::UI::Input::KeyboardAndMouse::EnableWindow;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
-/// Four tools, then "Start with Windows".
-const ROWS: usize = 5;
+/// One row per tool, then "Start with Windows".
+const ROWS: usize = Tool::ALL.len() + 1;
 const ID_CHECK: i32 = 100;
 const ID_NAME: i32 = 200;
 const ID_DETAIL: i32 = 300;
@@ -180,7 +180,7 @@ unsafe fn create(dark: bool) {
 
     let style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
     let ex = WS_EX_CONTROLPARENT | WS_EX_APPWINDOW;
-    let mut rect = RECT { left: 0, top: 0, right: s(560), bottom: s(540) };
+    let mut rect = RECT { left: 0, top: 0, right: s(800), bottom: s(604) };
     let _ = AdjustWindowRectEx(&mut rect, style, false, ex);
     let (w, h) = (rect.right - rect.left, rect.bottom - rect.top);
     let x = (GetSystemMetrics(SM_CXSCREEN) - w) / 2;
@@ -198,35 +198,36 @@ unsafe fn create(dark: bool) {
     }
 
     let p = PAINT.get().unwrap();
-    control(hwnd, w!("STATIC"), "Connect your tools", 0, 10, (24, 18, 512, 32), p.title);
+    control(hwnd, w!("STATIC"), "Connect your tools", 0, 10, (24, 16, 752, 32), p.title);
     control(
         hwnd,
         w!("STATIC"),
-        "Tick a tool to show it on Discord, or untick it to disconnect. Ctrl Alt Delegate adds its own plugin and doesn't change any other settings or hooks.",
+        "Tick a tool to show it on Discord, or untick it to disconnect. Only Ctrl Alt Delegate's own plugin is added or removed.",
         0,
         ID_INTRO,
-        (24, 54, 512, 40),
+        (24, 52, 752, 24),
         p.font,
     );
     for row in 0..ROWS {
-        let y = 104 + row as i32 * 64;
+        // Two columns: the name on the left, what it means on the right.
+        let y = 88 + row as i32 * 42;
         let name = Tool::ALL.get(row).map_or("Start with Windows", |t| t.label());
-        control(hwnd, w!("BUTTON"), "", WS_TABSTOP.0 | 3 /* BS_AUTOCHECKBOX */, ID_CHECK + row as i32, (24, y + 1, 20, 20), p.font);
-        control(hwnd, w!("STATIC"), name, 0x100 /* SS_NOTIFY */, ID_NAME + row as i32, (52, y, 484, 22), p.bold);
-        control(hwnd, w!("STATIC"), "", 0x100, ID_DETAIL + row as i32, (52, y + 22, 484, 38), p.font);
+        control(hwnd, w!("BUTTON"), "", WS_TABSTOP.0 | 3 /* BS_AUTOCHECKBOX */, ID_CHECK + row as i32, (24, y + 2, 20, 20), p.font);
+        control(hwnd, w!("STATIC"), name, 0x100 /* SS_NOTIFY */, ID_NAME + row as i32, (52, y + 2, 180, 20), p.bold);
+        control(hwnd, w!("STATIC"), "", 0x100, ID_DETAIL + row as i32, (240, y + 3, 536, 38), p.font);
     }
     // The commands view: hidden until "Show commands", then it takes the place of the tool rows.
     let edit = 0x4 /* ES_MULTILINE */ | 0x40 /* ES_AUTOVSCROLL */ | 0x800 /* ES_READONLY */;
-    control(hwnd, w!("EDIT"), "", WS_TABSTOP.0 | WS_VSCROLL.0 | WS_BORDER.0 | edit, ID_COMMANDS, (24, 104, 512, 280), p.mono);
-    control(hwnd, w!("BUTTON"), "Copy", WS_TABSTOP.0, ID_COPY, (436, 392, 100, 30), p.font);
+    control(hwnd, w!("EDIT"), "", WS_TABSTOP.0 | WS_VSCROLL.0 | WS_BORDER.0 | edit, ID_COMMANDS, (24, 88, 752, 370), p.mono);
+    control(hwnd, w!("BUTTON"), "Copy", WS_TABSTOP.0, ID_COPY, (676, 466, 100, 30), p.font);
     for id in [ID_COMMANDS, ID_COPY] {
         let _ = ShowWindow(item(id), SW_HIDE);
     }
-    control(hwnd, w!("STATIC"), "", 0, ID_RESULT, (24, 428, 512, 56), p.font);
-    control(hwnd, w!("BUTTON"), "Refresh", WS_TABSTOP.0, ID_REFRESH, (24, 492, 104, 32), p.font);
-    control(hwnd, w!("BUTTON"), "Show commands", WS_TABSTOP.0, ID_SHOW, (136, 492, 150, 32), p.font);
-    control(hwnd, w!("BUTTON"), "Apply", WS_TABSTOP.0 | 1 /* BS_DEFPUSHBUTTON */, ID_APPLY, (320, 492, 112, 32), p.font);
-    control(hwnd, w!("BUTTON"), "Close", WS_TABSTOP.0, ID_CLOSE, (440, 492, 96, 32), p.font);
+    control(hwnd, w!("STATIC"), "", 0, ID_RESULT, (24, 512, 752, 40), p.font);
+    control(hwnd, w!("BUTTON"), "Refresh", WS_TABSTOP.0, ID_REFRESH, (24, 560, 104, 32), p.font);
+    control(hwnd, w!("BUTTON"), "Show commands", WS_TABSTOP.0, ID_SHOW, (136, 560, 150, 32), p.font);
+    control(hwnd, w!("BUTTON"), "Apply", WS_TABSTOP.0 | 1 /* BS_DEFPUSHBUTTON */, ID_APPLY, (560, 560, 112, 32), p.font);
+    control(hwnd, w!("BUTTON"), "Close", WS_TABSTOP.0, ID_CLOSE, (680, 560, 96, 32), p.font);
 }
 
 unsafe fn control(parent: HWND, class: PCWSTR, text: &str, style: u32, id: i32, (x, y, w, h): (i32, i32, i32, i32), font: HFONT) {
@@ -264,7 +265,7 @@ fn refresh(first_run: bool) {
         let mut rows = Vec::new();
         for (i, tool) in Tool::ALL.into_iter().enumerate() {
             let status = setup::detect(tool, &m.env, root.as_deref());
-            let ready = root.as_deref().is_some_and(|r| setup::plugin_ready(r, tool)) && (!matches!(tool, Tool::VsCode | Tool::VsCodeInsiders) || m.vsix.is_some());
+            let ready = root.as_deref().is_some_and(|r| setup::plugin_ready(r, tool)) && (!tool.uses_extension() || m.vsix.is_some());
             let available = status.cli.is_some() && (status.installed || ready);
             let detail = setup::describe(tool, &status, root.as_deref(), m.vsix.is_some());
             let changed = m.statuses[i].as_ref().is_none_or(|old| old.installed != status.installed);
@@ -436,7 +437,7 @@ fn apply() {
             });
             let line = match &result {
                 Ok(()) => format!("{}: {}", tool.label(), setup::after(tool, change)),
-                Err(e) => format!("{}: couldn't {} ({e}).", tool.label(), change.verb()),
+                Err(e) => setup::failure(tool, change, e),
             };
             log::write(&format!("Setup: {line}"));
             lines.push(line);

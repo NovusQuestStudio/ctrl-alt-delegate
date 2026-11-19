@@ -20,7 +20,13 @@ waiting, idle), and the app shows the one that matters most right now.
 | Claude Code (CLI and desktop app) | ✅ Supported (plugin hooks) |
 | Codex Desktop | ✅ Supported (plugin hooks) |
 | Codex CLI | ✅ Expected to work (same plugin and hook engine; not separately tested) |
-| Devin Desktop / Windsurf, Devin (cloud) | 🔬 Under investigation |
+| Devin Desktop agent sidebar | ✅ Supported (hooks in Devin's config) |
+| Devin Desktop editor | ✅ Supported (extension) |
+| Devin CLI | ✅ Expected to work (same hooks and config as the sidebar; not separately tested) |
+| Antigravity agent (IDE and CLI) | ✅ Supported (plugin hooks). Shows Working and Ready; Antigravity has no waiting signal |
+| Antigravity editor | ✅ Supported (extension) |
+| Gemini CLI | ❌ Not planned: Google replaced it with Antigravity CLI for free accounts |
+| Devin (cloud) | 🔬 Under investigation |
 
 Windows 11 first. macOS is planned.
 
@@ -54,20 +60,28 @@ as their program exits, and timers survive restarts of the app.
    - Windows may warn about an unknown publisher, because the files aren't code-signed yet. Choose
      **More info → Run anyway**.
    - If you move the folder later, turn **Start with Windows** off and on again.
-5. The **Connect your tools** window opens. It finds VS Code, VS Code Insiders, Claude Code and
-   Codex on your PC and shows whether each one is connected. Tick the ones you want and click
+5. The **Connect your tools** window opens. It finds VS Code, VS Code Insiders, Claude Code,
+   Codex, Devin and Antigravity on your PC and shows whether each one is connected. Tick the ones you want and click
    **Apply**. Untick one later to disconnect it.
    - To open it again, use **Connect your tools…** in the tray menu, or run `ctrl-alt-delegate.exe`
      a second time.
    - **Codex** won't run plugin hooks until you approve them: restart Codex, open **Settings → Hooks**
      and approve Ctrl Alt Delegate. The window says "Hooks approved" once that's done.
    - Restart open Claude Code sessions, and reload open VS Code windows, after connecting them.
+   - **Devin:** start a new chat in the agent sidebar after connecting, and reload Devin Desktop's
+     windows for the editor. Devin doesn't run hooks in a folder opened in Restricted Mode.
+   - **Antigravity:** close it completely before connecting or disconnecting its agent, because it
+     locks its plugin folder while it runs. Then start a new conversation.
    - If you move the folder later, open the window and click **Apply** to relink the plugins.
 
-<img src="docs/screenshots/setup-window.png" alt="Connect your tools window with VS Code, VS Code Insiders, Claude Code, Codex and Start with Windows" width="520">
+<img src="docs/screenshots/setup-window.png" alt="Connect your tools window listing VS Code, VS Code Insiders, Claude Code, Codex, Devin agent, Devin Desktop editor, Antigravity agent, Antigravity editor and Start with Windows" width="640">
 
 The window runs each tool's own installer (`code --install-extension`, `claude plugin`,
 `codex plugin`). It adds only the Ctrl Alt Delegate plugin and doesn't change any other settings or hooks.
+Devin has no installer for hooks, so `cad.exe devin connect` adds ours to the `"hooks"` section of
+Devin's settings file, `%APPDATA%\devin\config.json`. Everything else in that file is kept, and the
+first change saves the original next to it as `config.json.cad-backup`. Its sections may come back in
+a different order, which doesn't change their meaning.
 Click **Show commands** to see exactly what **Apply** will run, with the real paths on your PC, and
 **Copy** them to run yourself in PowerShell instead. Each command is also written to the log as it
 runs. The general commands are under **Manual setup** below.
@@ -119,13 +133,28 @@ $codex = (Get-Process codex | Select-Object -First 1).Path
 
 Restart Codex. Then approve the plugin's hooks under **Settings → Hooks**: Codex doesn't run plugin hooks until you trust them.
 
-Neither install changes your existing hooks. To remove the plugins, run
+**Devin:** for the agent sidebar and the Devin CLI, run this from the unzipped folder, then start a
+new chat in Devin. Use `disconnect` to remove the hooks again.
+
+```powershell
+& "<path to this folder>\cad.exe" devin connect
+```
+
+**Antigravity:** with Antigravity closed, run
+`agy plugin install "<path to this folder>\plugins\antigravity"` (remove it with
+`agy plugin uninstall ctrl-alt-delegate`). For its editor, use
+`antigravity-ide --install-extension "<path to this folder>\ctrl-alt-delegate-vscode.vsix"`.
+
+For Devin Desktop's editor, install the extension with
+`devin-desktop --install-extension "<path to this folder>\ctrl-alt-delegate-vscode.vsix"`.
+
+None of these installs change your existing hooks. To remove the plugins, run
 `claude plugin uninstall ctrl-alt-delegate@ctrl-alt-delegate` or
 `codex plugin remove ctrl-alt-delegate@ctrl-alt-delegate` (or untick them in **Connect your tools**).
 
 ## Command line
 
-`cad.exe status | pause | resume | pin AGENT:ID | unpin | start | stop | paths`
+`cad.exe status | pause | resume | pin AGENT:ID | unpin | start | stop | devin connect | devin disconnect | paths`
 
 ## Settings
 

@@ -1,0 +1,8 @@
+{
+  "ctrl-alt-delegate": {
+    "SessionStart": [{"type": "command", "command": "bin\\cad.exe hook antigravity SessionStart", "timeout": 5}],
+    "PreInvocation": [{"type": "command", "command": "bin\\cad.exe hook antigravity PreInvocation", "timeout": 5}],
+    "PostToolUse": [{"matcher": ".*", "hooks": [{"type": "command", "command": "bin\\cad.exe hook antigravity PostToolUse", "timeout": 5}]}],
+    "Stop": [{"type": "command", "command": "bin\\cad.exe hook antigravity Stop", "timeout": 5}]
+  }
+}

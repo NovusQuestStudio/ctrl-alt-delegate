@@ -1,5 +1,5 @@
 //! `cad`: console companion to the Ctrl Alt Delegate tray app.
-//! Agent plugins call `cad hook claude-code|codex`; people can use it to check or control the service.
+//! Agent plugins call `cad hook claude-code|codex|devin|antigravity`; people can use it to check or control the service.
 
 use cad::ipc::{request, service_path, RequestError};
 use cad::protocol::Agent;
@@ -14,7 +14,10 @@ const HELP: &str = "Ctrl Alt Delegate command line
   cad unpin                  Resume automatic selection
   cad start                  Start the tray app (and the presence service) if it is not running
   cad stop                   Quit the tray app and clear Discord activity
-  cad hook claude-code|codex Receive a lifecycle hook on stdin (used by the agent plugins)
+  cad hook claude-code|codex|devin|antigravity EVENT
+                             Receive a lifecycle hook on stdin (used by the agent plugins)
+  cad devin connect          Add this app's hooks to Devin's config.json (nothing else changes)
+  cad devin disconnect       Remove them again
   cad paths                  Show settings, state, log, and pipe locations
 
 Environment: CAD_SOCKET, CAD_CONFIG, CAD_STATE, DISCORD_IPC_PATH";
@@ -47,7 +50,7 @@ fn main() {
     // Hooks must never print or fail.
     if arg(0) == Some("hook") {
         if let Some(agent) = arg(1).and_then(Agent::parse).filter(|a| *a != Agent::Vscode) {
-            cad::hook::run(agent);
+            cad::hook::run(agent, arg(2));
         }
         return;
     }
@@ -58,6 +61,11 @@ fn main() {
         Some("pin") if arg(1).is_some() => send(json!({"type": "pin", "key": arg(1)})).map(|_| ()),
         Some("unpin") => send(json!({"type": "pin", "key": null})).map(|_| ()),
         Some("start") => start(),
+        Some("devin") if matches!(arg(1), Some("connect" | "disconnect")) => {
+            let config = cad::setup::devin_config(&cad::setup::Env::system());
+            let cad = std::env::current_exe().map_err(|e| e.to_string());
+            cad.and_then(|cad| cad::setup::devin_hooks(&config, (arg(1) == Some("connect")).then_some(cad.as_path()))).map(|message| println!("{message}"))
+        }
         Some("stop") => match request(&service_path(), &json!({"type": "stop"}), Duration::from_secs(5)) {
             Ok(_) => Ok(println!("Ctrl Alt Delegate stopped.")),
             Err(RequestError::NotRunning) => Ok(println!("Ctrl Alt Delegate is not running.")),

@@ -1,4 +1,4 @@
-export const agents = ['claude-code', 'codex', 'vscode'] as const;
+export const agents = ['claude-code', 'codex', 'devin', 'antigravity', 'vscode'] as const;
 export type Agent = typeof agents[number];
 export type State = 'idle' | 'working' | 'waiting' | 'error' | 'closed';
 export interface PresenceEvent {
@@ -28,11 +28,11 @@ export interface PresenceEvent {
   /** Which build of the editor reported this (VS Code family only). Absent means VS Code stable. */
   edition?: Edition;
 }
-export const labels: Record<Agent, string> = {'claude-code': 'Claude Code', codex: 'Codex', vscode: 'VS Code'};
+export const labels: Record<Agent, string> = {'claude-code': 'Claude Code', codex: 'Codex', devin: 'Devin', antigravity: 'Antigravity', vscode: 'VS Code'};
 // Keep in sync with `Edition` in apps/tray/src/protocol.rs.
-export const editions = ['insiders', 'vscodium', 'cursor', 'windsurf', 'devin'] as const;
+export const editions = ['insiders', 'vscodium', 'cursor', 'windsurf', 'devin', 'antigravity'] as const;
 export type Edition = typeof editions[number];
-const editionLabels: Record<Edition, string> = {insiders: 'VS Code Insiders', vscodium: 'VSCodium', cursor: 'Cursor', windsurf: 'Windsurf', devin: 'Devin Desktop'};
+const editionLabels: Record<Edition, string> = {insiders: 'VS Code Insiders', vscodium: 'VSCodium', cursor: 'Cursor', windsurf: 'Windsurf', devin: 'Devin Desktop', antigravity: 'Antigravity'};
 /** Display name for a session's tool, including the editor edition. */
 export function toolLabel(e: Pick<PresenceEvent, 'agent' | 'edition'>): string {
   return e.agent === 'vscode' && e.edition ? editionLabels[e.edition] : labels[e.agent];
@@ -44,6 +44,7 @@ export function editionFromAppName(appName: string): Edition | undefined {
   if (/cursor/i.test(appName)) return 'cursor';
   if (/windsurf/i.test(appName)) return 'windsurf';
   if (/devin/i.test(appName)) return 'devin';
+  if (/antigravity/i.test(appName)) return 'antigravity';
   return undefined;
 }
 const states: readonly State[] = ['idle', 'working', 'waiting', 'error', 'closed'];

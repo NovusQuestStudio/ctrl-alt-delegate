@@ -4,7 +4,20 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
-- **Connect your tools window:** finds VS Code, VS Code Insiders, Claude Code and Codex, shows
+- **Devin support:**
+  - **Agent sidebar and CLI:** the card shows "Devin · Working", "Waiting for input" and so on.
+    `cad devin connect` adds the hooks to Devin's config.json, keeps everything else in it, and saves a
+    backup first. `cad devin disconnect` removes them.
+  - **Devin Desktop editor:** the VS Code extension works there too, and the card says "Devin Desktop".
+  - Claude Code hooks that Devin runs are counted as Devin, not Claude Code.
+- **Antigravity support:**
+  - **Agent (IDE and CLI):** a small plugin installed with `agy plugin install` shows "Antigravity ·
+    Working" and "Ready for a prompt". Antigravity has no waiting or session-end signal, so its card
+    can't show "Waiting for input", and a session clears when the program exits.
+  - **Editor:** the extension works there too, and the card says "Antigravity".
+- **VS Code extension:** now needs VS Code 1.85 or newer (was 1.140), so it also installs in editors
+  built on older VS Code versions, such as Antigravity, Cursor and Windsurf.
+- **Connect your tools window:** finds VS Code, VS Code Insiders, Claude Code, Codex, Devin and Antigravity, shows
   whether each is connected, and connects or disconnects them with one click. No terminal needed.
   - Opens on first run, from the tray menu, or when you launch the app a second time.
   - Shows whether Codex hooks are approved, and updates when you switch back from Codex.
