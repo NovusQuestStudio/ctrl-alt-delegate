@@ -1,0 +1,17 @@
+{
+  "name": "ctrl-alt-delegate",
+  "owner": {
+    "name": "Ctrl Alt Delegate contributors"
+  },
+  "metadata": {
+    "description": "One Discord Rich Presence for your development tools and AI coding agents."
+  },
+  "plugins": [
+    {
+      "name": "ctrl-alt-delegate",
+      "source": "./plugins/claude-code",
+      "description": "Reports session state (never prompts, code, or file names) to the local Ctrl Alt Delegate Discord presence app.",
+      "version": "0.1.0"
+    }
+  ]
+}

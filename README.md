@@ -12,9 +12,10 @@ waiting, idle), and the app shows the one that matters most right now.
 |---|---|
 | VS Code (Stable) | ✅ Supported (extension) |
 | VS Code Insiders | ✅ Supported (extension) |
-| Claude Code | ✅ Supported (plugin hooks) |
-| Codex CLI | 🔜 Planned (hook mapping exists, not yet verified) |
-| Codex Desktop, Devin Desktop / Windsurf, Devin (cloud) | 🔬 Under investigation |
+| Claude Code (CLI and desktop app) | ✅ Supported (plugin hooks) |
+| Codex Desktop | ✅ Supported (plugin hooks) |
+| Codex CLI | ✅ Expected to work (same plugin and hook engine; not separately tested) |
+| Devin Desktop / Windsurf, Devin (cloud) | 🔬 Under investigation |
 
 Windows 11 first. macOS is planned.
 
@@ -58,8 +59,28 @@ cd apps/vscode && npm install && npm run package
 code --install-extension ctrl-alt-delegate-vscode.vsix
 ```
 
-**Claude Code:** copy `apps/tray/target/release/cad.exe` into `plugins/claude-code/bin/`, then start
-Claude Code with `claude --plugin-dir plugins/claude-code`.
+Run `scripts/build.ps1` first. It builds the app and copies `cad.exe` into both agent plugins.
+
+**Claude Code:**
+
+```bash
+claude plugin marketplace add "<path to this folder>"
+claude plugin install ctrl-alt-delegate@ctrl-alt-delegate
+```
+
+**Codex (desktop app or CLI):** Codex Desktop includes a `codex.exe` command-line tool. In PowerShell,
+with Codex open:
+
+```powershell
+$codex = (Get-Process codex | Select-Object -First 1).Path
+& $codex plugin marketplace add "<path to this folder>"
+& $codex plugin add ctrl-alt-delegate@ctrl-alt-delegate
+```
+
+Restart Codex. Then approve the plugin's hooks under **Settings → Hooks**: Codex doesn't run plugin hooks until you trust them.
+
+Neither install changes your existing hooks. To remove the plugins, run
+`claude plugin uninstall ctrl-alt-delegate@ctrl-alt-delegate` or `codex plugin remove ctrl-alt-delegate`.
 
 ## Command line
 

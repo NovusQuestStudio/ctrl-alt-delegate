@@ -1,0 +1,88 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ],
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/bin/cad.exe hook codex",
+            "timeout": 2,
+            "statusMessage": "Ctrl Alt Delegate"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "ctrl-alt-delegate",
+  "interface": {
+    "displayName": "Ctrl Alt Delegate"
+  },
+  "plugins": [
+    {
+      "name": "ctrl-alt-delegate",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
