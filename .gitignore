@@ -8,3 +8,5 @@ dist/
 /apps/vscode/dist/
 /apps/vscode/node_modules/
 /apps/vscode/*.vsix
+
+/plugins/*/bin/
