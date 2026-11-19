@@ -2,7 +2,7 @@
 
 This project follows [Semantic Versioning](https://semver.org/).
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-19)
 
 First release, for Windows 11 (x64).
 
