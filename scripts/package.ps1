@@ -25,6 +25,7 @@ foreach ($plugin in 'claude-code', 'codex') {
 $zip = Join-Path $out "$name.zip"
 Compress-Archive -Path $stage -DestinationPath $zip
 $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
-Set-Content -Path (Join-Path $out 'SHA256SUMS.txt') -Value "$hash  $name.zip" -Encoding ascii
+# LF line ending so `sha256sum -c SHA256SUMS.txt` works on macOS, Linux, and Git Bash too.
+[System.IO.File]::WriteAllText((Join-Path $out 'SHA256SUMS.txt'), "$hash  $name.zip`n", [System.Text.Encoding]::ASCII)
 Write-Output "Created $zip"
 Write-Output "SHA-256 $hash"
