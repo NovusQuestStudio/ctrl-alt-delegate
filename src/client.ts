@@ -37,8 +37,8 @@ export function request(message: object, path = socketPath(), timeout = 500): Pr
     });
   });
 }
-export async function emit(event: PresenceEvent, path?: string): Promise<void> {
-  try { await request({type: 'event', event}, path); } catch { /* Presence never blocks the tool. */ }
+export async function emit(event: PresenceEvent, path?: string, timeout?: number): Promise<void> {
+  try { await request({type: 'event', event}, path, timeout); } catch { /* Presence never blocks the tool. */ }
 }
 /** A bounded, serialized queue for long-lived reporters: coalesces rapid updates and preserves close ordering. */
 export class Reporter {
@@ -47,13 +47,16 @@ export class Reporter {
   private sending?: Promise<void>;
   private timer?: ReturnType<typeof setInterval>;
   project?: string;
+  /** Set before `set()` when the update is caused by the user; cleared after sending. */
+  interaction = false;
   constructor(readonly agent: Agent, readonly sessionId: string,
     private readonly send: (event: PresenceEvent) => Promise<void> = emit) {}
   set(state: State): void {
     const updatedAt = Math.max(Date.now(), lastTimestamp + 1);
     lastTimestamp = updatedAt;
     this.event = {version: 1, agent: this.agent, sessionId: this.sessionId, state, updatedAt, pid: process.pid,
-      ...(this.project ? {project: this.project} : {})};
+      ...(this.project ? {project: this.project} : {}), ...(this.interaction ? {interaction: true} : {})};
+    this.interaction = false;
     this.enqueue(this.event);
     if (!this.timer && state !== 'closed') {
       this.timer = setInterval(() => {

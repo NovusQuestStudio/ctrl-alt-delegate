@@ -16,8 +16,11 @@ picks one activity to show.
 
 ## Status
 
-Stage 0 (foundation) is done. Claude Code reporting works through a local plugin. Still to come:
-the tray app, VS Code extension, Codex, smarter focus-aware selection.
+Done: Discord connection, Claude Code reporting through a local plugin, and session selection.
+The card shows a pinned session first, then one in the focused window, then an active one,
+then the one you prompted most recently. Changes that you didn't trigger wait 5 seconds before
+switching the card. Sessions clear as soon as the agent process exits, and session timers survive
+restarts of the service. Still to come: the tray app, VS Code extension, and Codex.
 
 ## Try it (Windows, Node 22+)
 

@@ -17,7 +17,8 @@ export function hookEvent(agent: HookAgent, payload: Record<string, unknown>, no
   if (name === 'SessionStart') state = payload.source === 'compact' ? 'working' : 'idle';
   if (['UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure'].includes(name as string)) state = 'working';
   if (name === 'PermissionRequest') state = 'waiting';
-  if (name === 'Notification' && ['permission_prompt', 'idle_prompt', 'elicitation_dialog'].includes(payload.notification_type as string)) state = 'waiting';
+  // idle_prompt means Claude has sat idle for a while: still ready, not waiting on a decision.
+  if (name === 'Notification' && ['permission_prompt', 'elicitation_dialog'].includes(payload.notification_type as string)) state = 'waiting';
   if (name === 'Stop' || name === 'Interrupt') state = 'idle';
   if (name === 'StopFailure') state = 'error';
   if (name === 'SessionEnd') state = 'closed';
@@ -25,6 +26,7 @@ export function hookEvent(agent: HookAgent, payload: Record<string, unknown>, no
   const project = projectName(payload.cwd);
   return {version: 1, agent, sessionId: payload.session_id, state, updatedAt: now,
     ...(continuations.includes(name as string) ? {continuation: true} : {}),
+    ...((name === 'UserPromptSubmit' || (name === 'SessionStart' && payload.source !== 'compact')) ? {interaction: true} : {}),
     ...(project ? {project} : {})};
 }
 
@@ -39,7 +41,9 @@ export async function runHook(agent: HookAgent): Promise<void> {
       if (Buffer.byteLength(data) > 1024 * 1024) return;
     }
     const event = hookEvent(agent, JSON.parse(data), now);
-    if (event) await emit(event);
+    // The parent (a shell, or the agent itself) is alive while this hook runs, so the service can
+    // walk up from it to the agent. Allow time for that one-off lookup on a session's first event.
+    if (event) await emit(event.state === 'closed' ? event : {...event, ppid: process.ppid}, undefined, 1500);
   } catch { /* Hooks are advisory and must never print or block the agent. */ }
   finally { clearTimeout(timer); process.stdin.destroy(); }
 }

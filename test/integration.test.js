@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:net';
 import {spawn} from 'node:child_process';
+import {join} from 'node:path';
 import {DiscordClient, Decoder, frame} from '../dist/discord.js';
 import {startDaemon} from '../dist/daemon.js';
 import {request} from '../dist/client.js';
 import {DEFAULT_SETTINGS} from '../dist/settings.js';
+import {WindowsProcessTable} from '../dist/process-table.js';
 import {ipcEndpoint, until, recorder} from './helpers.js';
 
 const CLIENT_ID = '1572816615429640333';
@@ -56,9 +58,9 @@ test('daemon + real CLI hooks: switching, privacy, pause, pin, and closure', asy
   const {path, cleanup} = await ipcEndpoint('daemon');
   const {activity, transport} = recorder();
   let settings = {...DEFAULT_SETTINGS};
-  const daemon = await startDaemon({path, transport, settings: () => settings});
+  const daemon = await startDaemon({path, transport, settings: () => settings, processes: null, statePath: null, settleMs: 0});
   t.after(async () => { await daemon.close(); await cleanup(); });
-  await assert.rejects(startDaemon({path, transport}), /already running/);
+  await assert.rejects(startDaemon({path, transport, processes: null, statePath: null}), /already running/);
   async function hook(agent, name, extra = {}) {
     const child = spawn(process.execPath, ['dist/cli.js', 'hook', agent, '--socket', path], {stdio: ['pipe', 'pipe', 'pipe']});
     let output = ''; child.stdout.on('data', d => { output += d; }); child.stderr.on('data', d => { output += d; });
@@ -98,7 +100,7 @@ test('invalid settings keep the last valid configuration', async t => {
   const {path, cleanup} = await ipcEndpoint('settings');
   const {transport} = recorder();
   let fail = false;
-  const daemon = await startDaemon({path, transport, settings: () => { if (fail) throw new Error('bad json'); return {...DEFAULT_SETTINGS, showProject: true}; }});
+  const daemon = await startDaemon({path, transport, processes: null, statePath: null, settings: () => { if (fail) throw new Error('bad json'); return {...DEFAULT_SETTINGS, showProject: true}; }});
   t.after(async () => { await daemon.close(); await cleanup(); });
   fail = true;
   const status = await request({type: 'status'}, path);
@@ -110,7 +112,7 @@ test('invalid settings keep the last valid configuration', async t => {
 test('CLI stop clears the transport, closes the endpoint, and succeeds when already stopped; restart works', async t => {
   const {path, cleanup} = await ipcEndpoint('stop');
   const {activity, transport} = recorder();
-  const daemon = await startDaemon({path, transport, settings: () => ({...DEFAULT_SETTINGS})});
+  const daemon = await startDaemon({path, transport, processes: null, statePath: null, settings: () => ({...DEFAULT_SETTINGS})});
   t.after(async () => { await daemon.close(); await cleanup(); });
   async function stop() {
     const child = spawn(process.execPath, ['dist/cli.js', 'stop', '--socket', path], {stdio: ['ignore', 'pipe', 'pipe']});
@@ -124,15 +126,16 @@ test('CLI stop clears the transport, closes the endpoint, and succeeds when alre
   assert.equal(activity.at(-1), null);
   await assert.rejects(request({type: 'status'}, path), e => ['ENOENT', 'ECONNREFUSED'].includes(e.code));
   assert.match(await stop(), /not running/);
-  const replacement = await startDaemon({path, dryRun: true, log() {}, settings: () => ({...DEFAULT_SETTINGS})});
+  const replacement = await startDaemon({path, dryRun: true, log() {}, processes: null, statePath: null, settings: () => ({...DEFAULT_SETTINGS})});
   await replacement.close();
 });
 
 test('background start releases the terminal, rejects duplicates, reports failures, and supports stop', async t => {
-  const {path, cleanup} = await ipcEndpoint('background');
+  const {dir, path, cleanup} = await ipcEndpoint('background');
+  const env = {...process.env, CAD_STATE: join(dir, 'sessions.json'), CAD_CONFIG: join(dir, 'config.json')};
   t.after(async () => { try { await request({type: 'stop'}, path, 10_000); } catch {} await cleanup(); });
   async function cli(args) {
-    const child = spawn(process.execPath, ['dist/cli.js', ...args, '--socket', path], {stdio: ['ignore', 'pipe', 'pipe']});
+    const child = spawn(process.execPath, ['dist/cli.js', ...args, '--socket', path], {env, stdio: ['ignore', 'pipe', 'pipe']});
     let output = ''; let error = '';
     const timer = setTimeout(() => child.kill(), 15_000);
     child.stdout.on('data', d => { output += d; }); child.stderr.on('data', d => { error += d; });
@@ -153,4 +156,94 @@ test('background start releases the terminal, rejects duplicates, reports failur
   const invalid = await cli(['start', '-b', '--client-id', 'invalid']);
   assert.equal(invalid.code, 1);
   assert.match(invalid.error, /Invalid Discord Application ID/);
+});
+
+test('hook sessions attach to the agent process and clear as soon as it exits', async t => {
+  const {path, cleanup} = await ipcEndpoint('agent');
+  const {activity, transport} = recorder();
+  // A stand-in for the agent: the hook's parent (this test process) plays the shell, `agent` plays claude.exe.
+  const agent = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {stdio: 'ignore'});
+  const table = new Map([[process.pid, {pid: process.pid, ppid: agent.pid, name: 'bash.exe'}], [agent.pid, {pid: agent.pid, ppid: 4, name: 'claude.exe'}], [4, {pid: 4, ppid: 0, name: 'WindowsTerminal.exe'}]]);
+  let lookups = 0;
+  const daemon = await startDaemon({path, transport, settings: () => ({...DEFAULT_SETTINGS}), statePath: null, settleMs: 0,
+    processes: {snapshot: async () => { lookups++; return table; }}});
+  t.after(async () => { agent.kill(); await daemon.close(); await cleanup(); });
+  const child = spawn(process.execPath, ['dist/cli.js', 'hook', 'claude-code', '--socket', path], {stdio: ['pipe', 'ignore', 'ignore']});
+  child.stdin.end(JSON.stringify({session_id: 'live', hook_event_name: 'UserPromptSubmit'}));
+  await new Promise(resolve => child.on('close', resolve));
+  let status = await request({type: 'status'}, path);
+  // The real CLI hook's parent is this test process ("bash.exe" in the fake table), whose parent is the agent.
+  assert.equal(status.selected, 'claude-code:live');
+  assert.equal(status.sessions[0].agentPid, agent.pid);
+  await request({type: 'event', event: {version: 1, agent: 'claude-code', sessionId: 'direct', state: 'working', updatedAt: Date.now(), ppid: process.pid}}, path);
+  status = await request({type: 'status'}, path);
+  const direct = status.sessions.find(s => s.key === 'claude-code:direct');
+  assert.equal(direct.agentPid, agent.pid); assert.equal(direct.agentName, 'claude.exe');
+  assert.ok(lookups >= 1);
+  await request({type: 'event', event: {version: 1, agent: 'claude-code', sessionId: 'direct', state: 'idle', updatedAt: Date.now(), ppid: process.pid}}, path);
+  const before = lookups;
+  await request({type: 'event', event: {version: 1, agent: 'claude-code', sessionId: 'direct', state: 'working', updatedAt: Date.now(), ppid: process.pid}}, path);
+  assert.equal(lookups, before, 'the lookup runs once per session, not per event');
+  await request({type: 'focus', pid: 4}, path);
+  assert.equal((await request({type: 'status'}, path)).focus.pid, 4);
+  agent.kill();
+  await until(async () => !(await request({type: 'status'}, path)).sessions.some(s => s.key === 'claude-code:direct'));
+  assert.equal((await request({type: 'status'}, path)).sessions.length, 0, 'both sessions belonged to the exited agent');
+  assert.equal(JSON.stringify(activity).includes('claude.exe'), false);
+});
+
+test('application restart keeps session timers; a reused pid is not mistaken for the agent', async t => {
+  const {dir, path, cleanup} = await ipcEndpoint('restart');
+  const statePath = join(dir, 'sessions.json');
+  const agent = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {stdio: 'ignore'});
+  t.after(async () => { agent.kill(); await cleanup(); });
+  const named = name => ({snapshot: async () => new Map([[process.pid, {pid: process.pid, ppid: agent.pid, name: 'bash.exe'}], [agent.pid, {pid: agent.pid, ppid: 0, name}]])});
+  const options = {path, transport: recorder().transport, settings: () => ({...DEFAULT_SETTINGS}), statePath, settleMs: 0};
+  const first = await startDaemon({...options, processes: named('codex.exe')});
+  const startedAt = Date.now() - 60_000;
+  await request({type: 'event', event: {version: 1, agent: 'codex', sessionId: 'keep', state: 'working', updatedAt: startedAt, interaction: true, ppid: process.pid}}, path);
+  await request({type: 'event', event: {version: 1, agent: 'claude-code', sessionId: 'hookonly', state: 'idle', updatedAt: startedAt}}, path);
+  await request({type: 'pin', key: 'codex:keep'}, path);
+  await first.close();
+  const second = await startDaemon({...options, processes: named('codex.exe')});
+  let status = await request({type: 'status'}, path);
+  assert.deepEqual(status.sessions.map(s => s.key).sort(), ['claude-code:hookonly', 'codex:keep']);
+  assert.equal(status.sessions.find(s => s.key === 'codex:keep').startedAt, startedAt);
+  assert.equal(status.pinned, 'codex:keep');
+  assert.equal(status.activity.timestamps.start, Math.floor(startedAt / 1000));
+  await second.close();
+  const third = await startDaemon({...options, processes: named('notepad.exe')});
+  await until(async () => !(await request({type: 'status'}, path)).sessions.some(s => s.key === 'codex:keep'));
+  status = await request({type: 'status'}, path);
+  assert.deepEqual(status.sessions.map(s => s.key), ['claude-code:hookonly']);
+  await third.close();
+});
+
+test('focus messages are validated and change the selection', async t => {
+  const {path, cleanup} = await ipcEndpoint('focus');
+  const daemon = await startDaemon({path, transport: recorder().transport, settings: () => ({...DEFAULT_SETTINGS}), processes: null, statePath: null, settleMs: 0});
+  t.after(async () => { await daemon.close(); await cleanup(); });
+  const now = Date.now();
+  await request({type: 'event', event: {version: 1, agent: 'vscode', sessionId: 'win1', state: 'idle', updatedAt: now - 10, pid: process.pid}}, path);
+  await request({type: 'event', event: {version: 1, agent: 'codex', sessionId: 'c', state: 'working', updatedAt: now, interaction: true}}, path);
+  assert.equal((await request({type: 'status'}, path)).selected, 'codex:c');
+  await request({type: 'focus', key: 'vscode:win1'}, path);
+  assert.equal((await request({type: 'status'}, path)).selected, 'vscode:win1');
+  await request({type: 'focus', key: null}, path);
+  assert.equal((await request({type: 'status'}, path)).selected, 'codex:c');
+  await assert.rejects(request({type: 'focus', pid: -1}, path), /Invalid focus pid/);
+  await assert.rejects(request({type: 'focus', key: 42}, path), /Invalid focus key/);
+});
+
+test('Windows process table: real Toolhelp snapshot sees this process and its parent', {skip: process.platform !== 'win32'}, async () => {
+  const table = new WindowsProcessTable();
+  try {
+    const snapshot = await table.snapshot();
+    assert.ok(snapshot.size > 10);
+    assert.equal(snapshot.get(process.pid)?.ppid, process.ppid);
+    assert.match(snapshot.get(process.pid)?.name ?? '', /^node(\.exe)?$/i);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Past the 250 ms cache.
+    const warm = performance.now(); await table.snapshot();
+    assert.ok(performance.now() - warm < 1000, 'a warm query is fast');
+  } finally { table.close(); }
 });

@@ -13,6 +13,13 @@ export interface PresenceEvent {
   heartbeat?: boolean;
   /** A tool or permission event continues the current task rather than starting a new one. */
   continuation?: boolean;
+  /** A deliberate user action (prompt, session start, editor activity). Drives selection. */
+  interaction?: boolean;
+  /**
+   * Parent pid of a short-lived hook process. Transient: the service uses it once to find the
+   * long-lived agent process (for liveness and focus) and never retains it.
+   */
+  ppid?: number;
   /**
    * Folder name only (never a path). Kept locally; shown in Discord only when the
    * user enables `showProject`.
@@ -37,12 +44,14 @@ export function parseEvent(value: unknown, now = Date.now()): PresenceEvent {
   if (typeof e.updatedAt !== 'number' || !Number.isSafeInteger(e.updatedAt) || e.updatedAt < 0 || e.updatedAt > now + 60_000) throw new Error('Invalid updatedAt');
   if (e.pid !== undefined && (!Number.isSafeInteger(e.pid) || (e.pid as number) <= 0)) throw new Error('Invalid pid');
   if (e.heartbeat !== undefined && typeof e.heartbeat !== 'boolean') throw new Error('Invalid heartbeat');
-  if (e.continuation !== undefined && typeof e.continuation !== 'boolean') throw new Error('Invalid continuation');
+  for (const key of ['continuation', 'interaction'] as const) if (e[key] !== undefined && typeof e[key] !== 'boolean') throw new Error(`Invalid ${key}`);
+  if (e.ppid !== undefined && (!Number.isSafeInteger(e.ppid) || (e.ppid as number) <= 0)) throw new Error('Invalid ppid');
   if (e.project !== undefined && (typeof e.project !== 'string' || projectName(e.project) !== e.project)) throw new Error('Invalid project');
   // Whitelist fields: never retain prompts, paths, file names, or tool arguments.
   return {version: 1, agent: e.agent as Agent, sessionId: e.sessionId, state: e.state as State, updatedAt: e.updatedAt,
     pid: e.pid as number | undefined, heartbeat: e.heartbeat as boolean | undefined,
-    continuation: e.continuation as boolean | undefined, project: e.project as string | undefined};
+    continuation: e.continuation as boolean | undefined, interaction: e.interaction as boolean | undefined,
+    ppid: e.ppid as number | undefined, project: e.project as string | undefined};
 }
 export function sessionKey(e: Pick<PresenceEvent, 'agent' | 'sessionId'>): string {
   return `${e.agent}:${e.sessionId}`;
