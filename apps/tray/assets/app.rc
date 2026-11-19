@@ -1,0 +1,26 @@
+// Windows resources for ctrl-alt-delegate.exe and cad.exe: application icon and version information.
+1 ICON "app.ico"
+
+1 VERSIONINFO
+FILEVERSION 0,1,0,0
+PRODUCTVERSION 0,1,0,0
+FILEOS 0x40004
+FILETYPE 0x1
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "ProductName", "Ctrl Alt Delegate"
+      VALUE "FileDescription", "Ctrl Alt Delegate - one Discord presence for your coding tools"
+      VALUE "ProductVersion", "0.1.0"
+      VALUE "FileVersion", "0.1.0"
+      VALUE "LegalCopyright", "MIT License"
+      VALUE "Comments", "One Developer. Multiple Agents. One Workflow."
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

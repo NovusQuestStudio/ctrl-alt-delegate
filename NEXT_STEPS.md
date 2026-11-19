@@ -15,7 +15,7 @@
 2. ✅ Done: retired the Node service and rewrote the README (`58c9825`).
 3. ✅ Done: Phase B. The Claude plugin and the Codex plugin install from local marketplaces. Verified live in Claude Code and Codex Desktop.
 4. **Phase C:** the tray items are done; still to do:
-   - **App icon on the .exe files**, so Task Manager, Startup apps, Explorer and the taskbar show the Ctrl Alt Delegate icon instead of a generic one. Build a multi-size `.ico` (16–256 px) from the approved icon. Embed it in `ctrl-alt-delegate.exe` and `cad.exe` with a `build.rs` resource step. That needs either Windows SDK `rc.exe` or a small build crate such as `embed-resource`, and the crate needs approval. Also add version info: product name and description.
+   - ✅ Done: app icon and version info embedded in both .exe files (build.rs + Windows SDK rc.exe).
    - Upload the icon under Discord **Rich Presence → Art Assets** and set `largeImage` in the settings file.
 5. Stage 6 (v0.1.0 release): CI, a portable zip with SHA-256 checksums, CHANGELOG, SECURITY/privacy note, then a GitHub release. Nothing is published without approval.
 
