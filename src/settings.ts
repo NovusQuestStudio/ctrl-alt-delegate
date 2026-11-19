@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
-import {join} from 'node:path';
+import {mkdir, writeFile, rename} from 'node:fs/promises';
+import {dirname, join} from 'node:path';
 import {homedir} from 'node:os';
 
 /** User settings. Every privacy-relevant option defaults to the most private value. */
@@ -41,5 +42,25 @@ export function loadSettings(path = settingsPath()): Settings {
   let text: string;
   try { text = readFileSync(path, 'utf8'); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {...DEFAULT_SETTINGS}; throw error; }
-  return validateSettings(JSON.parse(text.replace(/^﻿/, '')));
+  return validateSettings(JSON.parse(text.replace(BOM, '')));
+}
+
+const BOM = new RegExp('^' + String.fromCharCode(0xfeff));
+const EOL = String.fromCharCode(10);
+/** Settings the tray may change. Other keys are edited by hand in the settings file. */
+export const TOGGLES = ['enabled', 'showProject'] as const;
+/** Apply a validated patch and write the file atomically, preserving the user's other settings. */
+export async function saveSettings(patch: unknown, path = settingsPath()): Promise<Settings> {
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('Expected settings patch');
+  const keys = Object.keys(patch);
+  if (!keys.length || keys.some(k => !(TOGGLES as readonly string[]).includes(k))) throw new Error(`Only ${TOGGLES.join(', ')} can be changed here`);
+  let current: Record<string, unknown> = {};
+  try { current = JSON.parse(readFileSync(path, 'utf8').replace(BOM, '')); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('Settings file is invalid; fix it before changing settings'); }
+  const next = validateSettings({...current, ...patch});
+  await mkdir(dirname(path), {recursive: true, mode: 0o700});
+  const temp = `${path}.${process.pid}.tmp`;
+  await writeFile(temp, JSON.stringify({...current, ...patch}, null, 2) + EOL, {mode: 0o600});
+  await rename(temp, path);
+  return next;
 }

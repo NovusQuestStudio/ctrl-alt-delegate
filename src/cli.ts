@@ -2,7 +2,7 @@
 import {parseArgs} from 'node:util';
 import {fileURLToPath} from 'node:url';
 import {startDaemon} from './daemon.js';
-import {request} from './client.js';
+import {request, socketPath} from './client.js';
 import {runHook} from './adapters/hooks.js';
 import {APP_NAME} from './constants.js';
 import {settingsPath} from './settings.js';
@@ -17,6 +17,7 @@ const help = `${APP_NAME} — one Discord Rich Presence for your coding tools
   pin AGENT:SESSION_ID      Always show one session
   unpin                     Resume automatic selection
   hook claude-code|codex    Receive a lifecycle hook on stdin (used by the plugins)
+  socket-path               Print the local service endpoint (used by the tray)
 
 Options: --client-id ID, --socket PATH
 Settings file: ${settingsPath()}
@@ -62,6 +63,7 @@ async function main() {
       else throw error;
     }
   }
+  else if (command === 'socket-path') console.log(socketPath());
   else if (command === 'status') console.log(JSON.stringify(await request({type: 'status'}), null, 2));
   else if (command === 'pause' || command === 'resume') await request({type: 'pause', paused: command === 'pause'});
   else if (command === 'pin' && argument) await request({type: 'pin', key: argument});

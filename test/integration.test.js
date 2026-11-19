@@ -247,3 +247,22 @@ test('Windows process table: real Toolhelp snapshot sees this process and its pa
     assert.ok(performance.now() - warm < 1000, 'a warm query is fast');
   } finally { table.close(); }
 });
+
+test('settings messages persist only tray toggles and keep other settings', async t => {
+  const {dir, path, cleanup} = await ipcEndpoint('save');
+  const {saveSettings, loadSettings} = await import('../dist/settings.js');
+  const {writeFile, readFile} = await import('node:fs/promises');
+  const config = join(dir, 'config.json');
+  await writeFile(config, JSON.stringify({largeImage: 'keep_me', staleMinutes: 15}));
+  const daemon = await startDaemon({path, transport: recorder().transport, processes: null, statePath: null, settleMs: 0,
+    settings: () => loadSettings(config), saveSettings: patch => saveSettings(patch, config)});
+  t.after(async () => { await daemon.close(); await cleanup(); });
+  await request({type: 'settings', patch: {showProject: true, enabled: false}}, path);
+  const saved = JSON.parse(await readFile(config, 'utf8'));
+  assert.deepEqual(saved, {largeImage: 'keep_me', staleMinutes: 15, showProject: true, enabled: false});
+  assert.equal((await request({type: 'status'}, path)).enabled, false);
+  await assert.rejects(request({type: 'settings', patch: {largeImage: 'x'}}, path), /Only enabled, showProject/);
+  await assert.rejects(request({type: 'settings', patch: {enabled: 'yes'}}, path), /true or false/);
+  await writeFile(config, '{broken');
+  await assert.rejects(request({type: 'settings', patch: {enabled: true}}, path), /invalid/);
+});

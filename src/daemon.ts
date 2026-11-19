@@ -7,7 +7,7 @@ import {Selector, type Focus} from './selector.js';
 import {DiscordClient, activityFor, type Activity, type DiscordProfile} from './discord.js';
 import {sessionKey} from './protocol.js';
 import {DISCORD_CLIENT_ID} from './constants.js';
-import {DEFAULT_SETTINGS, loadSettings, type Settings} from './settings.js';
+import {DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings} from './settings.js';
 import {ancestry, findAgent, systemProcessTable, type Snapshot} from './process-table.js';
 import {readState, statePath, StateWriter} from './persist.js';
 export interface Transport {status: string; readonly acknowledged?: boolean; readonly user?: DiscordProfile | null; start(): void; setActivity(activity: Activity | null): void; stop(): void}
@@ -23,6 +23,8 @@ export interface DaemonOptions {
   statePath?: string | null;
   /** How long a non-interactive change must stay on top before the card switches. */
   settleMs?: number;
+  /** Persist a settings patch (tests). Defaults to writing the settings file. */
+  saveSettings?: (patch: unknown) => Promise<unknown>;
 }
 const LOOKUP_TIMEOUT_MS = 1000;
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -115,6 +117,7 @@ export async function startDaemon(options: DaemonOptions = {}) {
         }
         else if (message.type === 'pin') store.pin(message.key);
         else if (message.type === 'pause') paused = message.paused === true;
+        else if (message.type === 'settings') await (options.saveSettings ?? saveSettings)(message.patch);
         else if (message.type === 'focus') {
           const {pid, key} = message;
           if (pid !== undefined && (!Number.isSafeInteger(pid) || pid <= 0)) throw new Error('Invalid focus pid');
@@ -126,7 +129,7 @@ export async function startDaemon(options: DaemonOptions = {}) {
         const shown = selected();
         socket.end(JSON.stringify(message.type === 'status' ? {
           ok: true, discord: transport.status, profile: transport.user ?? null, activityAcknowledged: transport.acknowledged ?? null,
-          enabled: settings.enabled, paused, pinned: store.pinned, focus, pid: process.pid, settingsError,
+          enabled: settings.enabled, showProject: settings.showProject, paused, pinned: store.pinned, focus, pid: process.pid, settingsError,
           activity: currentActivity(), selected: shown ? sessionKey(shown) : null,
           sessions: [...store.sessions.values()].map(s => ({key: sessionKey(s), agent: s.agent, state: s.state, project: s.project,
             startedAt: s.startedAt, updatedAt: s.updatedAt, lastSeen: s.lastSeen, lastInteraction: s.lastInteraction,
