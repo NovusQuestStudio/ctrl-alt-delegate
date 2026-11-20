@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/logo-256.png" alt="Ctrl Alt Delegate logo: a terminal prompt connected to code, chat, AI and layered-stack icons" width="140">
+<img src="docs/images/logo-256.png" alt="Ctrl Alt Delegate logo: a glowing &lt;_ terminal prompt over the NovusQuest NQ monogram" width="140">
 
 # Ctrl Alt Delegate
 
