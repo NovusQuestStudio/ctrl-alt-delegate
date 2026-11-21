@@ -1,4 +1,4 @@
-//! Connects Ctrl Alt Delegate to VS Code, Claude Code, Codex and Devin.
+//! Connects Ctrl Alt Delegate to VS Code, Claude Code, Codex, Devin and Antigravity.
 //!
 //! Detection only reads files. Changes go through each tool's own command-line installer
 //! (`code --install-extension`, `claude plugin`, `codex plugin`), so each tool keeps managing its
@@ -162,9 +162,9 @@ pub fn detect(tool: Tool, env: &Env, root: Option<&Path>) -> Status {
         }
         Tool::Codex => {
             let cli = first_file(env.codex_packages.iter().map(|p| p.join("app").join("resources").join("codex.exe"))).or_else(|| on_path(env, &["codex.exe", "codex.cmd"]));
-            let expected = root.map_or(0, |r| codex_hook_count(&r.join("plugins").join("codex").join("hooks").join("hooks.json")));
+            let expected = root.map_or_else(Vec::new, |r| codex_hooks(&r.join("plugins").join("codex").join("hooks").join("hooks.json")));
             let config = std::fs::read_to_string(env.codex_dir.join("config.toml")).unwrap_or_default();
-            let mut status = codex_status(&config, expected);
+            let mut status = codex_status(&config, &expected);
             status.cli = cli;
             status
         }
@@ -317,11 +317,14 @@ fn claude_status(dir: &Path) -> Status {
 }
 
 /// Reads the few Codex settings we need from config.toml without a TOML library.
-fn codex_status(config: &str, expected_hooks: usize) -> Status {
+/// Codex records each approved hook under `[hooks.state."<plugin>:<file>:<event>:<group>:<index>"]`.
+/// Only approvals for the hooks the current plugin defines count, so leftovers from an older version don't.
+fn codex_status(config: &str, expected_hooks: &[String]) -> Status {
     let plugin_table = format!("[plugins.\"{PLUGIN}\"]");
     let marketplace_table = format!("[marketplaces.{MARKETPLACE}]");
     let hook_prefix = format!("[hooks.state.\"{PLUGIN}:");
-    let (mut table, mut installed, mut linked_to, mut approved) = (String::new(), false, None, 0);
+    let (mut table, mut installed, mut linked_to) = (String::new(), false, None);
+    let mut approved = std::collections::BTreeSet::new();
     for line in config.lines().map(str::trim) {
         if line.starts_with('[') {
             table = line.to_string();
@@ -333,21 +336,33 @@ fn codex_status(config: &str, expected_hooks: usize) -> Status {
             installed = value == "true";
         } else if table == marketplace_table && key == "source" {
             linked_to = Some(PathBuf::from(value.trim_matches(|c| c == '\'' || c == '"')));
-        } else if table.starts_with(&hook_prefix) && key == "trusted_hash" {
-            approved += 1;
+        } else if key == "trusted_hash" {
+            let id = table.strip_prefix(&hook_prefix).and_then(|rest| rest.strip_suffix("\"]"));
+            if let Some(id) = id.filter(|id| expected_hooks.iter().any(|e| e == id)) {
+                approved.insert(id.to_string());
+            }
         }
     }
-    Status { installed, linked_to, hooks: Some((approved.min(expected_hooks), expected_hooks)), ..Status::default() }
+    Status { installed, linked_to, hooks: Some((approved.len(), expected_hooks.len())), ..Status::default() }
 }
 
-fn codex_hook_count(hooks_json: &Path) -> usize {
-    let Some(json) = read_json(hooks_json) else { return 0 };
-    json.get("hooks")
-        .and_then(Value::as_object)
-        .map(|events| {
-            events.values().filter_map(Value::as_array).flatten().filter_map(|group| group.get("hooks").and_then(Value::as_array)).map(Vec::len).sum()
-        })
-        .unwrap_or(0)
+/// The hook ids Codex will ask to approve for our hooks.json, e.g. `hooks/hooks.json:post_tool_use:0:0`.
+fn codex_hooks(hooks_json: &Path) -> Vec<String> {
+    let Some(json) = read_json(hooks_json) else { return Vec::new() };
+    let Some(events) = json.get("hooks").and_then(Value::as_object) else { return Vec::new() };
+    let mut ids = Vec::new();
+    for (event, groups) in events {
+        let snake: String = event.chars().enumerate().flat_map(|(i, c)| {
+            let sep = (i > 0 && c.is_ascii_uppercase()).then_some('_');
+            sep.into_iter().chain(std::iter::once(c.to_ascii_lowercase()))
+        }).collect();
+        for (g, group) in groups.as_array().into_iter().flatten().enumerate() {
+            for h in 0..group.get("hooks").and_then(Value::as_array).map_or(0, Vec::len) {
+                ids.push(format!("hooks/hooks.json:{snake}:{g}:{h}"));
+            }
+        }
+    }
+    ids
 }
 
 /// Codex Desktop is a Microsoft Store app; its package folder is listed in the user's registry.
@@ -644,23 +659,29 @@ mod tests {
     fn reads_codex_config_without_changing_it() {
         let config = format!(
             "[plugins.\"{PLUGIN}\"]\nenabled = true\n\n[marketplaces.{MARKETPLACE}]\nsource_type = \"local\"\nsource = '\\\\?\\C:\\Apps\\CAD'\n\n\
-             [hooks.state.\"{PLUGIN}:hooks/hooks.json:stop:0:0\"]\ntrusted_hash = \"sha256:1\"\n[hooks.state.\"other@x:hooks/hooks.json:stop:0:0\"]\ntrusted_hash = \"sha256:2\"\n"
+             [hooks.state.\"{PLUGIN}:hooks/hooks.json:stop:0:0\"]\ntrusted_hash = \"sha256:1\"\n\
+             [hooks.state.\"{PLUGIN}:hooks/hooks.json:old_event:0:0\"]\ntrusted_hash = \"sha256:3\"\n\
+             [hooks.state.\"other@x:hooks/hooks.json:stop:0:0\"]\ntrusted_hash = \"sha256:2\"\n"
         );
-        let s = codex_status(&config, 7);
+        let expected: Vec<String> = ["stop:0:0", "session_start:0:0"].iter().map(|e| format!("hooks/hooks.json:{e}")).collect();
+        let s = codex_status(&config, &expected);
         assert!(s.installed);
         assert!(same_folder(s.linked_to.as_deref().unwrap(), Path::new("c:/apps/cad/")));
-        assert_eq!(s.hooks, Some((1, 7)));
-        assert_eq!(codex_status("", 7), Status { hooks: Some((0, 7)), ..Status::default() });
-        assert!(!codex_status(&format!("[plugins.\"{PLUGIN}\"]\nenabled = false\n"), 7).installed);
+        // Our stop hook counts; another plugin's, and an approval for a hook we no longer have, don't.
+        assert_eq!(s.hooks, Some((1, 2)));
+        assert_eq!(codex_status("", &expected), Status { hooks: Some((0, 2)), ..Status::default() });
+        assert!(!codex_status(&format!("[plugins.\"{PLUGIN}\"]\nenabled = false\n"), &expected).installed);
     }
 
     #[test]
-    fn counts_codex_hooks_from_the_plugin() {
+    fn lists_codex_hook_ids_from_the_plugin() {
         let dir = temp("hooks");
         let file = dir.join("hooks.json");
-        write(&file, r#"{"hooks":{"Stop":[{"hooks":[{"type":"command"}]}],"SessionStart":[{"hooks":[{"type":"command"},{"type":"command"}]}]}}"#);
-        assert_eq!(codex_hook_count(&file), 3);
-        assert_eq!(codex_hook_count(&dir.join("missing.json")), 0);
+        write(&file, r#"{"hooks":{"Stop":[{"hooks":[{"type":"command"}]}],"PostToolUse":[{"hooks":[{"type":"command"},{"type":"command"}]}]}}"#);
+        let mut ids = codex_hooks(&file);
+        ids.sort();
+        assert_eq!(ids, ["hooks/hooks.json:post_tool_use:0:0", "hooks/hooks.json:post_tool_use:0:1", "hooks/hooks.json:stop:0:0"]);
+        assert!(codex_hooks(&dir.join("missing.json")).is_empty());
     }
 
     #[test]

@@ -9,7 +9,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "local"
+    "url": "https://github.com/NovusQuestStudio/ctrl-alt-delegate"
   },
   "engines": {
     "vscode": "^1.85.0"

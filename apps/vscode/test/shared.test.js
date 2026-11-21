@@ -18,6 +18,8 @@ test('protocol keeps only whitelisted fields and rejects bad data', () => {
 test('folder names and editor editions', () => {
   assert.equal(projectName('C:\\Users\\me\\Code\\my-app\\'), 'my-app');
   assert.equal(projectName('C:\\'), undefined);
+  // C1 control characters are dropped, as the tray's Rust check expects.
+  assert.equal(projectName('C:\\Code\\my\u0085app'), 'myapp');
   assert.equal(editionFromAppName('Visual Studio Code - Insiders'), 'insiders');
   assert.equal(editionFromAppName('Visual Studio Code'), undefined);
   assert.equal(editionFromAppName('Windsurf'), 'windsurf');

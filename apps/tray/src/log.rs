@@ -1,4 +1,5 @@
-//! Small local log for troubleshooting. Never contains prompts, code, paths, or project names.
+//! Small local log for troubleshooting. Never contains prompts, code, or project names. Setup entries
+//! include the commands it runs, with your user and app folder paths.
 
 use std::io::Write;
 use std::path::PathBuf;

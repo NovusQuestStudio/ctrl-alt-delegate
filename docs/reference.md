@@ -16,7 +16,8 @@ to Discord, or quit. The menu follows Windows dark and light mode.
 4. Then the session you prompted most recently.
 
 A background agent finishing its work doesn't take the card from the one you're using. Changes you
-didn't trigger wait 5 seconds before the card switches, so it doesn't flicker. Sessions clear as soon
+didn't trigger, including switching windows, wait 5 seconds before the card switches, so it doesn't
+flicker. A prompt or an edit switches it straight away. Sessions clear as soon
 as their program exits, and timers survive restarts of the app.
 
 ## Settings
@@ -34,7 +35,21 @@ apply within a second.
 | `showProject` | Show the project folder's name on the card. Off by default. |
 | `largeImage` | The card's image: the name of an art asset uploaded under **Rich Presence → Art Assets** in the Discord Developer Portal, or an `https://` link to a public image. Set it to `""` to send no image (Discord then shows the application's App Icon). |
 | `toolBadges` | Show a small badge for the tool you're using (CC for Claude Code, VS for VS Code, and so on) on the corner of the card's image, with the tool's name on hover. On by default. Needs a `largeImage`. |
-| `staleMinutes` | Clear an agent session after this many minutes with no activity. |
+| `staleMinutes` | Clear an agent session after this many minutes with no activity, from 1 to 1440. Editor windows don't use it: they stay while the extension keeps checking in. |
+
+An unknown setting or a value out of range makes the whole file invalid. The app then keeps the last
+valid settings and shows the problem in the tray menu and in `cad status`.
+
+### Editor extension settings
+
+The VS Code extension (also in Insiders, VSCodium, Cursor, Windsurf, and the editors in Devin Desktop and
+Antigravity) has its own settings, under **Settings → Extensions → Ctrl Alt Delegate**:
+
+| Setting | Meaning |
+|---|---|
+| `ctrlAltDelegate.enabled` | Report this window's editing activity. On by default. |
+| `ctrlAltDelegate.idleMinutes` | Minutes without editing before the window shows as idle, from 1 to 120. Default 5. |
+| `ctrlAltDelegate.closeAfterMinutes` | Minutes without editing before the window's session is cleared, from 5 to 1440. Default 30. |
 
 ## Command line
 

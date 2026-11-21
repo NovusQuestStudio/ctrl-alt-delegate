@@ -30,7 +30,8 @@ at once. Each tool on its own would fight over your Discord status. Ctrl Alt Del
 connection to Discord and picks the one that matters:
 
 - **The card follows you.** The window you're looking at comes first, then whatever is working,
-  then whatever you prompted last. A pin overrides all of it.
+  then whatever you prompted last. A pin overrides all of it. When you switch windows, the card
+  waits 5 seconds before it follows, so it doesn't flicker.
 - **It shows the state, not the work.** "Working", "Waiting for input", "Ready for a prompt",
   "Editing". Never your prompts, code or file names.
 - **It's set up in one click.** A setup window finds your tools and connects them. No config files,
@@ -50,6 +51,9 @@ connection to Discord and picks the one that matters:
 
 ¹ Antigravity has no "waiting for permission" signal, so its card shows **Working** and **Ready**
 only.
+
+The extension also installs in editors built on VS Code, such as **VSCodium**, **Cursor** and
+**Windsurf**, and the card names them. These aren't tested yet.
 
 Windows 11 first; macOS is planned. Devin's cloud sessions are under investigation.
 
@@ -94,8 +98,9 @@ that card, which goes to the Discord app you already run.
 ## Privacy
 
 - **No telemetry, no accounts, no paid APIs.** The only connection is to the Discord app on your PC.
-- **Prompts, code, tool details, transcripts and file names are never read or sent.** Agents report
-  only their state.
+- **Prompts, code, tool details, transcripts and file names are never stored or sent.** A tool hands
+  its hook a block of event details. Ctrl Alt Delegate keeps only the session ID, the event name and
+  the project folder's name, and discards the rest straight away.
 - **Your project name is hidden** unless you turn on **Show project name**.
 - **Only your Windows account can talk to the app.** It listens on a local named pipe, not a network
   port.
@@ -122,6 +127,18 @@ Turn it off, for example `discord-vscode`, so the two don't take turns overwriti
 
 **Does it work on macOS or Linux?**
 Not yet. Windows 11 comes first, and macOS is planned.
+
+## Roadmap
+
+Planned for upcoming releases. Plans can change, and ideas are welcome in
+[issues](../../issues).
+
+- **Visual Studio support.** Visual Studio and Visual Studio Preview (Insiders), through their own
+  extension, with a purple VS badge on the card.
+- **Choose what the card shows.** Pick the second line yourself, for example the project name, the
+  file you're editing, or tokens used and their estimated cost. Every new option starts off, so
+  nothing new is shared unless you turn it on.
+- **macOS.**
 
 ## More
 

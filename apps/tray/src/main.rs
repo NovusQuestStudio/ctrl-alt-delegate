@@ -50,10 +50,25 @@ fn label<'a>(agent: &'a str, edition: Option<&'a str>) -> &'a str {
     }
 }
 
+/// With project names hidden, two sessions of one tool can read the same; number them so each pin item is distinct.
+fn number_duplicates(sessions: &mut [(String, String)]) {
+    let labels: Vec<String> = sessions.iter().map(|(_, l)| l.clone()).collect();
+    let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for (i, (_, l)) in sessions.iter_mut().enumerate() {
+        if labels.iter().filter(|x| **x == labels[i]).count() > 1 {
+            let n = seen.entry(labels[i].clone()).or_insert(0);
+            *n += 1;
+            *l = format!("{l} ({n})");
+        }
+    }
+}
+
 fn view(status: &Value, error: Option<&str>) -> View {
     let text = |key: &str| status.get(key).and_then(Value::as_str).unwrap_or("").to_string();
     let flag = |key: &str| status.get(key).and_then(Value::as_bool).unwrap_or(false);
     let showing = status.pointer("/activity/details").and_then(Value::as_str).map(str::to_string).unwrap_or_else(|| "Nothing".into());
+    // Project names follow Show project name here too, so a shared screen doesn't reveal them.
+    let show_project = flag("showProject");
     let mut sessions: Vec<(String, String)> = status
         .get("sessions")
         .and_then(Value::as_array)
@@ -63,14 +78,14 @@ fn view(status: &Value, error: Option<&str>) -> View {
                     let key = s.get("key")?.as_str()?.to_string();
                     let agent = label(s.get("agent")?.as_str()?, s.get("edition").and_then(Value::as_str));
                     let state = s.get("state")?.as_str()?;
-                    // The project name stays on this machine: the tray is local UI, not Discord.
-                    let project = s.get("project").and_then(Value::as_str).map(|p| format!(" — {p}")).unwrap_or_default();
+                    let project = s.get("project").and_then(Value::as_str).filter(|_| show_project).map(|p| format!(" — {p}")).unwrap_or_default();
                     Some((key, format!("{agent} · {state}{project}")))
                 })
                 .collect()
         })
         .unwrap_or_default();
     sessions.sort();
+    number_duplicates(&mut sessions);
     let error = error.map(str::to_string).or_else(|| status.get("settingsError").and_then(Value::as_str).map(str::to_string));
     View {
         running: status.get("ok") == Some(&json!(true)),
@@ -195,7 +210,7 @@ fn main() {
     let mut server = match Server::start(&service_path(), Arc::new(move |line| handler_core.lock().unwrap().handle(line, now_ms()))) {
         Ok(s) => Some(s),
         Err(e) => {
-            // Most likely an older Node version of the service is still running on the same pipe.
+            // Most likely another program already holds the pipe name.
             let message = format!("Agents cannot connect: {e}");
             log::write(&message);
             startup_error = Some(message);
@@ -381,8 +396,22 @@ mod tests {
         assert!(v.running && v.enabled && !v.paused && !v.show_project);
         assert_eq!(v.showing, "Claude Code · Working");
         assert_eq!(v.pinned.as_deref(), Some("codex:b"));
-        assert_eq!(v.sessions[0], ("claude-code:a".into(), "Claude Code · working — app".into()));
+        // Show project name is off, so the pin menu hides it too.
+        assert_eq!(v.sessions[0], ("claude-code:a".into(), "Claude Code · working".into()));
         assert_eq!(v.sessions[2].1, "VS Code Insiders · working");
+        let mut shown = status.clone();
+        shown["showProject"] = json!(true);
+        assert_eq!(view(&shown, None).sessions[0].1, "Claude Code · working — app");
+    }
+
+    #[test]
+    fn same_looking_sessions_get_numbers() {
+        let status = json!({"ok": true, "showProject": false, "sessions": [
+            {"key": "claude-code:a", "agent": "claude-code", "state": "idle", "project": "one"},
+            {"key": "claude-code:b", "agent": "claude-code", "state": "idle", "project": "two"},
+            {"key": "codex:c", "agent": "codex", "state": "idle"}]});
+        let labels: Vec<String> = view(&status, None).sessions.into_iter().map(|(_, l)| l).collect();
+        assert_eq!(labels, ["Claude Code · idle (1)", "Claude Code · idle (2)", "Codex · idle"]);
     }
 
     #[test]

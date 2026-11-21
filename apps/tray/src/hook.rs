@@ -1,7 +1,7 @@
-//! Claude Code, Codex and Devin lifecycle hooks: read the hook payload from stdin and report state only.
-//! Devin uses the same event names as Claude Code, and also runs Claude Code's hooks by default.
-//! Reads the session id, event name, notification type, compaction source, and the folder name of `cwd`.
-//! Prompts, tool input, transcripts, and assistant text are never read.
+//! Claude Code, Codex, Devin and Antigravity lifecycle hooks: parse the hook payload from stdin and
+//! report state only. Devin uses the same event names as Claude Code, and also runs Claude Code's hooks
+//! by default. Keeps the session id, event name, notification type, compaction source, and the folder
+//! name of `cwd`. Prompts, tool input, transcripts, and assistant text are dropped, never stored or sent.
 
 use crate::protocol::{project_name, Agent, Event, State};
 use serde_json::Value;

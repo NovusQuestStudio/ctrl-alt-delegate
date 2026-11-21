@@ -52,7 +52,8 @@ const states: readonly State[] = ['idle', 'working', 'waiting', 'error', 'closed
 export function projectName(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value) return;
   const name = value.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? '';
-  const clean = Array.from(name.replace(/[\u0000-\u001f\u007f]/g, '')).slice(0, 64).join('').trim();
+  // Same characters as Rust's char::is_control (C0, DEL and C1), so the tray accepts the name as sent.
+  const clean = Array.from(name.replace(/[\u0000-\u001f\u007f-\u009f]/g, '')).slice(0, 64).join('').trim();
   return clean && !/^[A-Za-z]:$/.test(clean) ? clean : undefined;
 }
 export function parseEvent(value: unknown, now = Date.now()): PresenceEvent {

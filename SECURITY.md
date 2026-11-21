@@ -8,8 +8,9 @@ Discord only ever receives:
 - the app's own name and image
 - the project folder name, but only if you turn on **Show project name**
 
-It never reads or sends prompts, responses, code, file names, file paths, tool arguments, or
-transcripts. There are no AI summaries, no telemetry, and no network connections. The only
+It never stores or sends prompts, responses, code, file names, file paths, tool arguments, or
+transcripts. A hook receives the tool's event details on its input, keeps only the session ID, event
+name, notification type, compaction source and project folder name, and discards the rest. There are no AI summaries, no telemetry, and no network connections. The only
 connection is to the Discord desktop app on your PC, over Discord's local IPC pipe. No Discord bot
 token, client secret or OAuth is used. The Discord Application ID built into the app is public by
 design.
