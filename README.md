@@ -19,7 +19,7 @@ that always shows what matters right now.
 [**Download**](../../releases/latest) · [Quick start](#quick-start) · [Privacy](#privacy) · [FAQ](#faq)
 
 <img src="docs/screenshots/card-claude-code.png" alt="Discord card: Ctrl Alt Delegate, Claude Code · Ready for a prompt, Project Ctrl Alt Delegate, with a CC badge" width="270">
-<img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor, with a VI badge" width="278">
+<img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor, with a VI badge" width="268">
 
 </div>
 
