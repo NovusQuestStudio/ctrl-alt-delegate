@@ -32,12 +32,18 @@ apply within a second.
 |---|---|
 | `enabled` | Share activity on Discord. Same as the tray's **Share activity on Discord**. |
 | `showProject` | Show the project folder's name on the card. Off by default. |
-| `largeImage` | The card's image. Set it to `""` to hide the image. |
+| `largeImage` | The card's image: the name of an art asset uploaded under **Rich Presence → Art Assets** in the Discord Developer Portal, or an `https://` link to a public image. Set it to `""` to send no image (Discord then shows the application's App Icon). |
 | `staleMinutes` | Clear an agent session after this many minutes with no activity. |
 
 ## Command line
 
 `cad.exe` sits next to the app. Agents and editors use it to report activity; you can use it too.
+
+It is a separate program because agents run their hooks as console commands, and pointing them at the
+tray app would start a second copy of it. Each hook runs `cad hook <agent>`, which passes the event to the
+running tray app and exits. The plugins call `cad.exe` by its full path, so keep it in the same folder as
+`ctrl-alt-delegate.exe`. If you move the folder, open **Connect/Disconnect Tools** and click **Apply** to
+relink your tools.
 
 | Command | What it does |
 |---|---|

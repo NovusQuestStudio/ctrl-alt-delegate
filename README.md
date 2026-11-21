@@ -57,7 +57,9 @@ Windows 11 first; macOS is planned. Devin's cloud sessions are under investigati
 
 1. **Download** `CtrlAltDelegate-<version>-windows-x64.zip` from [Releases](../../releases/latest)
    and unzip it somewhere you'll keep, such as `%LOCALAPPDATA%\Programs`. It creates a `CtrlAltDelegate`
-   folder; to upgrade later, unzip the new version over it.
+   folder; to upgrade later, unzip the new version over it. The folder holds two programs:
+   `ctrl-alt-delegate.exe` is the app you run, and `cad.exe` is a small helper your tools call to
+   report activity (see [Command line](docs/reference.md#command-line)). Keep them together.
 2. **Run** `ctrl-alt-delegate.exe`. Windows may say the publisher is unknown, because the app isn't
    code-signed yet: choose **More info → Run anyway**.
 3. **Tick your tools** in the **Connect your tools** window that opens, and click **Apply**.
