@@ -129,6 +129,22 @@ pub fn tool_label(agent: Agent, edition: Option<Edition>) -> &'static str {
     }
 }
 
+/// Discord art-asset key of the tool's badge (assets/discord/badges, built by scripts/make-badges.ps1).
+/// Devin Desktop and Antigravity's editor share their agent's badge.
+pub fn badge_key(agent: Agent, edition: Option<Edition>) -> &'static str {
+    match (agent, edition) {
+        (Agent::ClaudeCode, _) => "tool_claude_code",
+        (Agent::Codex, _) => "tool_codex",
+        (Agent::Devin, _) | (Agent::Vscode, Some(Edition::Devin)) => "tool_devin",
+        (Agent::Antigravity, _) | (Agent::Vscode, Some(Edition::Antigravity)) => "tool_antigravity",
+        (Agent::Vscode, None) => "tool_vscode",
+        (Agent::Vscode, Some(Edition::Insiders)) => "tool_vscode_insiders",
+        (Agent::Vscode, Some(Edition::Vscodium)) => "tool_vscodium",
+        (Agent::Vscode, Some(Edition::Cursor)) => "tool_cursor",
+        (Agent::Vscode, Some(Edition::Windsurf)) => "tool_windsurf",
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Event {
     pub agent: Agent,

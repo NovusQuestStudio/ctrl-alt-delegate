@@ -11,6 +11,8 @@ pub struct Settings {
     pub show_project: bool,
     /// Discord art-asset key (or HTTPS URL) for the large image. Empty uses none.
     pub large_image: String,
+    /// Show the tool's badge on the corner of the large image.
+    pub tool_badges: bool,
     /// Minutes without any event before a hook-only session is cleared.
     pub stale_minutes: i64,
 }
@@ -18,11 +20,11 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         // "ctrl_alt_delegate_icon" is the Rich Presence art asset uploaded to the Ctrl Alt Delegate Discord application.
-        Settings { enabled: true, show_project: false, large_image: "ctrl_alt_delegate_icon".into(), stale_minutes: 30 }
+        Settings { enabled: true, show_project: false, large_image: "ctrl_alt_delegate_icon".into(), tool_badges: true, stale_minutes: 30 }
     }
 }
 
-const KEYS: [&str; 4] = ["enabled", "showProject", "largeImage", "staleMinutes"];
+const KEYS: [&str; 5] = ["enabled", "showProject", "largeImage", "toolBadges", "staleMinutes"];
 /// Settings the tray may change. Others are edited by hand in the settings file.
 pub const TOGGLES: [&str; 2] = ["enabled", "showProject"];
 
@@ -70,10 +72,11 @@ pub fn validate(value: &Value) -> Result<Settings, String> {
     let boolean = |key: &str, default: bool| match obj.get(key) {
         None => Ok(default),
         Some(Value::Bool(b)) => Ok(*b),
-        _ => Err("enabled and showProject must be true or false".to_string()),
+        _ => Err("enabled, showProject and toolBadges must be true or false".to_string()),
     };
     s.enabled = boolean("enabled", s.enabled)?;
     s.show_project = boolean("showProject", s.show_project)?;
+    s.tool_badges = boolean("toolBadges", s.tool_badges)?;
     if let Some(v) = obj.get("largeImage") {
         let image = v.as_str().ok_or("largeImage must be a Discord art-asset key or an HTTPS URL")?;
         let key_ok = !image.is_empty() && image.len() <= 256 && image.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
@@ -136,7 +139,7 @@ pub fn save_toggles(path: &Path, patch: &Value) -> Result<Settings, String> {
 }
 
 pub fn to_json(s: &Settings) -> Value {
-    json!({"enabled": s.enabled, "showProject": s.show_project, "largeImage": s.large_image, "staleMinutes": s.stale_minutes})
+    json!({"enabled": s.enabled, "showProject": s.show_project, "largeImage": s.large_image, "toolBadges": s.tool_badges, "staleMinutes": s.stale_minutes})
 }
 
 #[cfg(test)]
@@ -157,6 +160,9 @@ mod tests {
             assert!(validate(&bad).is_err(), "{bad}");
         }
         assert_eq!(validate(&json!({"largeImage": "ctrl_alt_delegate"})).unwrap().large_image, "ctrl_alt_delegate");
+        assert!(Settings::default().tool_badges);
+        assert!(!validate(&json!({"toolBadges": false})).unwrap().tool_badges);
+        assert!(validate(&json!({"toolBadges": "no"})).is_err());
     }
 
     #[test]

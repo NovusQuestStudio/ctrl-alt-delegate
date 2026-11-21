@@ -40,7 +40,8 @@ First release, for Windows 11 (x64).
   log, reconnect to Discord, and quit.
 - **Privacy:** no telemetry and no network use beyond the local Discord app. Prompts, code and file
   names are never read. The project name is hidden by default.
-- **Discord card:** shows the Ctrl Alt Delegate icon by default.
+- **Discord card:** shows the Ctrl Alt Delegate icon by default, with a small badge for the tool
+  you're using (for example CC for Claude Code) on its corner. Turn the badge off with `toolBadges`.
 - **Windows look:** modern Windows controls, sharp on scaled displays, and the app icon and version
   information on both .exe files.
 - **Command line:** `cad.exe` (`status`, `pause`, `resume`, `pin`, `unpin`, `start`, `stop`,

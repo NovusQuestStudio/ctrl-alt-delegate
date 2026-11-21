@@ -135,7 +135,7 @@ impl Core {
         if self.paused || !self.settings.enabled {
             return None;
         }
-        crate::presentation::activity_for(key.and_then(|k| self.store.sessions.get(&k)), self.settings.show_project, &self.settings.large_image)
+        crate::presentation::activity_for(key.and_then(|k| self.store.sessions.get(&k)), self.settings.show_project, &self.settings.large_image, self.settings.tool_badges)
     }
 
     fn persist(&mut self) {

@@ -25,7 +25,7 @@ Settings live in `%APPDATA%\CtrlAltDelegate\config.json`. Open the file from the
 apply within a second.
 
 ```json
-{ "enabled": true, "showProject": false, "largeImage": "ctrl_alt_delegate_icon", "staleMinutes": 30 }
+{ "enabled": true, "showProject": false, "largeImage": "ctrl_alt_delegate_icon", "toolBadges": true, "staleMinutes": 30 }
 ```
 
 | Setting | Meaning |
@@ -33,6 +33,7 @@ apply within a second.
 | `enabled` | Share activity on Discord. Same as the tray's **Share activity on Discord**. |
 | `showProject` | Show the project folder's name on the card. Off by default. |
 | `largeImage` | The card's image: the name of an art asset uploaded under **Rich Presence → Art Assets** in the Discord Developer Portal, or an `https://` link to a public image. Set it to `""` to send no image (Discord then shows the application's App Icon). |
+| `toolBadges` | Show a small badge for the tool you're using (CC for Claude Code, VS for VS Code, and so on) on the corner of the card's image, with the tool's name on hover. On by default. Needs a `largeImage`. |
 | `staleMinutes` | Clear an agent session after this many minutes with no activity. |
 
 ## Command line
