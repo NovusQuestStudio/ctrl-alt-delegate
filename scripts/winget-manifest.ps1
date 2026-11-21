@@ -80,7 +80,7 @@ Tags:
 - discord
 - rich-presence
 - vscode
-ReleaseNotesUrl: $Repository/blob/main/CHANGELOG.md
+ReleaseNotesUrl: $Repository/releases/tag/v$version
 ManifestType: defaultLocale
 ManifestVersion: $schema
 "@
