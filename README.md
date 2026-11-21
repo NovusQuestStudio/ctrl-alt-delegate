@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/logo-256.png" alt="Ctrl Alt Delegate logo: a terminal prompt connected to code, chat, AI and layered-stack icons" width="140">
+<img src="docs/images/logo-256.png" alt="Ctrl Alt Delegate logo: a white >_ terminal prompt over the NovusQuest NQ monogram" width="140">
 
 # Ctrl Alt Delegate
 
@@ -18,8 +18,8 @@ that always shows what matters right now.
 
 [**Download**](../../releases/latest) · [Quick start](#quick-start) · [Privacy](#privacy) · [FAQ](#faq)
 
-<img src="docs/screenshots/card-claude-code.png" alt="Discord card: Ctrl Alt Delegate, Claude Code · Working, Delegating to an AI agent" width="380">
-<img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor" width="380">
+<img src="docs/screenshots/card-claude-code.png" alt="Discord card: Ctrl Alt Delegate, Claude Code · Ready for a prompt, Project Ctrl Alt Delegate, with a CC badge" width="270">
+<img src="docs/screenshots/card-vscode-insiders.png" alt="Discord card: Ctrl Alt Delegate, VS Code Insiders · Editing, In the editor, with a VI badge" width="278">
 
 </div>
 
